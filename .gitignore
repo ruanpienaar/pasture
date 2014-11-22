@@ -6,6 +6,7 @@ deps/*
 *.log
 apps/*/logs
 erl_crash.dump
-Mnesia*
-.rebar/erlcinfo
+*Mnesia*
+*.rebar/erlcinfo
 *.app
+/rel/pasture
