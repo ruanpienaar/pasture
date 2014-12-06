@@ -3,7 +3,10 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([
+    start_link/0,
+    start_twitter/0
+]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -18,10 +21,16 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
+start_twitter() ->
+    gen_server:call(pasture_twitter,update_status).
+
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
 init([]) ->
-    {ok, {{one_for_one, _Restarts=5, _WithInSeconds=10}, []}}.
+    {ok, {{one_for_one, _Restarts=5, _WithInSeconds=10}, [
+        %%?CHILD(pasture_twitter_fsm, worker),
+        ?CHILD(pasture_twitter, worker)
+    ]}}.
 

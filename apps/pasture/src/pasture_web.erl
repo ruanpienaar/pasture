@@ -34,10 +34,7 @@ stop(Pid) ->
 
 
 twitter() ->
-    % "oauth_access_token", "101055484-NVfKL3Tr1LioLunboyIvqPW8z4sE8hgVUlJkVRYB",
-    % "oauth_access_token_secret", "EBoeXKuK3oLWEExK6otVGEzc7hXgF50ZJhBZBNICbifQV",
-    % "consumer_key", "VxVSRMkD97tJSm3iBg0fbatBR",
-    % "consumer_secret", "UGfTwIh1DRM0xKQYGtYQjV8maSmiTJSfghmT1KKunU1K5rK03l"
+
 
 
     URL = "https://stream.twitter.com/1.1/statuses/filter.json".

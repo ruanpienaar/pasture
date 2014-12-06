@@ -15,11 +15,17 @@
 %% Dev
 start(ArgsList) ->
     ok = start_deps([pasture, {reloader,start}]),
-    {ok,RanchListenerPid} = pasture_web:start(),
+    %% Not needed at the mo
+    %%{ok,_RanchListenerPid} = pasture_web:start(),
     start(dev, ArgsList).
 
 start(_StartType, _StartArgs) ->
-    pasture_sup:start_link().
+    case pasture_sup:start_link() of
+        {ok,SupPid} ->
+            {ok,SupPid};
+        _ ->
+            oh_no
+    end.
 
 stop(_State) ->
     ok.
