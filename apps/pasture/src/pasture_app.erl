@@ -30,6 +30,9 @@ start(ArgsList) ->
          {attributes,record_info(fields, pasture_meetup)}
        ]),
 
+    ?INFO("Waiting for tables...\n"),
+    ok = mnesia:wait_for_tables([pasture_meetup],infinity),
+
     %% Not needed at the mo
     %%{ok,_RanchListenerPid} = pasture_web:start(),
     start(dev, ArgsList).
