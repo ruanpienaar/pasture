@@ -24,25 +24,25 @@ init({}) ->
     {ok, #?STATE{}}.
 
 handle_call({ibrowse_req_id,ReqId}, _From, State) ->
-    io:format("handle_call : ~p\n",[{ibrowse_req_id,ReqId}]),
+    ?INFO("handle_call : ~p\n",[{ibrowse_req_id,ReqId}]),
     {reply, ok, State#?STATE{ibrowse_req_id=ReqId}};
 handle_call(Request, _From, State) ->
-    io:format("handle_call : ~p\n",[Request]),
+    ?INFO("handle_call : ~p\n",[Request]),
     {reply, ok, State}.
 
 handle_cast(Msg, State) ->
-    io:format("handle_cast : ~p\n",[Msg]),
+    ?INFO("handle_cast : ~p\n",[Msg]),
     {noreply, State}.
 
 handle_info({ibrowse_async_response,_ReqId,Data},
     #?STATE{ stack = Stack } = State)
         %% when State#?STATE.ibrowse_req_id == ReqId
         ->
-    %% io:format("Data : \n~p\n\n",[Data]),
-    io:format("Received data...\n"),
+    %% ?INFO("Data : \n~p\n\n",[Data]),
+    ?INFO("Received data...\n"),
     {noreply,State#?STATE{ stack = parse_json(Stack,Data) }};
 handle_info(Info, State) ->
-    io:format("handle_info : ~p\n",[Info]),
+    ?INFO("handle_info : ~p\n",[Info]),
     {noreply, State}.
 
 terminate(_Reason, _State) ->
@@ -58,8 +58,8 @@ parse_json(Stack,Data) ->
     try
         case re:run(FullStack, "([a-zA-Z0-9]+)\\r\\n(.*)", [global]) of
             {match,[MS=[{_,End},{_,_},{Start,Length}]|_]} ->
-                io:format("     ...MS : ~p.\n",[MS]),
-                io:format("     ...match...\n"),
+                ?INFO("     ...MS : ~p.\n",[MS]),
+                ?INFO("     ...match...\n"),
                 %% Could also just use the hex in the string
                 % +1 i think because of ".
                 FullEntry = string:substr(FullStack,Start+1,Length),
@@ -77,10 +77,10 @@ parse_json(Stack,Data) ->
                         FullStack
                 end;
             {match,MM} ->
-                io:format("     ...match with ~p\nData: ~p\n\n",[MM,Data]),
+                ?INFO("     ...match with ~p\nData: ~p\n\n",[MM,Data]),
                 FullStack;
             nomatch ->
-                io:format("     ...no match\n",[]),
+                ?INFO("     ...no match\n",[]),
                 FullStack
         end
     catch
