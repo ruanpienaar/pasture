@@ -34,7 +34,7 @@ handle_cast(Msg, State) ->
     io:format("handle_cast : ~p\n",[Msg]),
     {noreply, State}.
 
-handle_info({ibrowse_async_response,ReqId,Data},
+handle_info({ibrowse_async_response,_ReqId,Data},
     #?STATE{ stack = Stack } = State)
         %% when State#?STATE.ibrowse_req_id == ReqId
         ->
@@ -55,30 +55,43 @@ parse_json([],Data) ->
     Data;
 parse_json(Stack,Data) ->
     FullStack = lists:append(Stack,Data),
-    case re:run(FullStack, "([a-zA-Z0-9]+)\\r\\n(.*)", [global]) of
-        {match,[MS=[{_,End},{_,_},{Start,Length}]|_]} ->
-            io:format("     ...MS : ~p.\n",[MS]),
-            io:format("     ...match...\n"),
-            %% Could also just use the hex in the string
-            % +1 i think because of ".
-            FullEntry = string:substr(FullStack,Start+1,Length),
-            %% io:format("FullEntry : ~p\n\n",[FullEntry]),
-            mnesia:dirty_write(#?MODULE{entry=FullEntry}),
-            % +3 to remove \n\r\n
-            %%io:format("FullStack : ~p\n\n",[FullStack]),
-            % io:format("Rest = lists:nthtail(~p+5,~p)",
-            %     [End,FullStack]),
-            case length(FullStack) >= End+5 of
-                true ->
-                    Rest = lists:nthtail(End+5,FullStack),
-                    parse_json(Rest,[]);
-                false ->
-                    FullStack
-            end;
-        {match,MM} ->
-            io:format("     ...match with ~p\nData: ~p\n\n",[MM,Data]),
-            FullStack;
-        nomatch ->
-            io:format("     ...no match\n",[]),
-            FullStack
+    try
+        case re:run(FullStack, "([a-zA-Z0-9]+)\\r\\n(.*)", [global]) of
+            {match,[MS=[{_,End},{_,_},{Start,Length}]|_]} ->
+                io:format("     ...MS : ~p.\n",[MS]),
+                io:format("     ...match...\n"),
+                %% Could also just use the hex in the string
+                % +1 i think because of ".
+                FullEntry = string:substr(FullStack,Start+1,Length),
+                %% io:format("FullEntry : ~p\n\n",[FullEntry]),
+                mnesia:dirty_write(#?MODULE{entry=FullEntry}),
+                % +3 to remove \n\r\n
+                %%io:format("FullStack : ~p\n\n",[FullStack]),
+                % io:format("Rest = lists:nthtail(~p+5,~p)",
+                %     [End,FullStack]),
+                case length(FullStack) >= End+5 of
+                    true ->
+                        Rest = lists:nthtail(End+5,FullStack),
+                        parse_json(Rest,[]);
+                    false ->
+                        FullStack
+                end;
+            {match,MM} ->
+                io:format("     ...match with ~p\nData: ~p\n\n",[MM,Data]),
+                FullStack;
+            nomatch ->
+                io:format("     ...no match\n",[]),
+                FullStack
+        end
+    catch
+        error:badarg ->
+            ?WARNING("parse_json Crash\n~p\n",[erlang:get_stacktrace()]),
+            %% Clear the whole stack
+            [];
+        C:E ->
+            %% Clear the whole stack
+            ?WARNING("parse_json failure\n~p\n~p\n~p\n",
+                [C,E,erlang:get_stacktrace()]),
+            []
     end.
+
