@@ -18,13 +18,15 @@
 start(ArgsList) ->
     ok = start_deps([pasture, {reloader,start}]),
 
+    Nodes = application:get_env(pasture, mnesia_nodes, [node()]),
+
     stopped = mnesia:stop(),
-    mnesia:create_schema([node()]),
+    mnesia:create_schema([Nodes]),
     ok = mnesia:start(),
     mnesia:create_table(
         pasture_meetup,
         [{type,set},
-         {disc_only_copies,[node()]},
+         {disc_only_copies,[Nodes]},
          {attributes,record_info(fields, pasture_meetup)}
        ]),
 
