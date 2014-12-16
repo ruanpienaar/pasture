@@ -10,7 +10,8 @@
                   ssl,
                   cowboy,
                   oauth,
-                  ibrowse
+                  ibrowse,
+                  mnesia
                  ]},
   {mod, { pasture_app, []}},
   {env, []}

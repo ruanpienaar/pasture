@@ -48,7 +48,7 @@ handle_call(update_status, _From, State) ->
     Status = "Hello Ladies + Gentlemen, a signed OAuth request!",
     QString = "?include_entities=true",
     Timestamp = generate_timestamp(),
-    NoOnce = base64:encode_to_string(crypto:rand_bytes(32))q,
+    NoOnce = base64:encode_to_string(crypto:rand_bytes(32)),
     Params = [
         {"status","Hello Ladies + Gentlemen, a signed OAuth request!"},
         {"include_entities","true"},

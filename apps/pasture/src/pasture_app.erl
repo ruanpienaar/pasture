@@ -8,6 +8,8 @@
 %% Application callbacks
 -export([start/2, stop/1]).
 
+-include("../include/pasture.hrl").
+
 %% ===================================================================
 %% Application callbacks
 %% ===================================================================
@@ -15,6 +17,17 @@
 %% Dev
 start(ArgsList) ->
     ok = start_deps([pasture, {reloader,start}]),
+
+    stopped = mnesia:stop(),
+    mnesia:create_schema([node()]),
+    ok = mnesia:start(),
+    mnesia:create_table(
+        pasture_meetup,
+        [{type,set},
+         {disc_only_copies,[node()]},
+         {attributes,record_info(fields, pasture_meetup)}
+       ]),
+
     %% Not needed at the mo
     %%{ok,_RanchListenerPid} = pasture_web:start(),
     start(dev, ArgsList).
@@ -22,9 +35,20 @@ start(ArgsList) ->
 start(_StartType, _StartArgs) ->
     case pasture_sup:start_link() of
         {ok,SupPid} ->
+            Ref =
+                ibrowse:send_req(
+                    "http://stream.meetup.com/2/rsvps",[],get,[],
+                    [
+                      {preserve_chunked_encoding,true},
+                      {stream_chunk_size,1024 * 24},
+                      %% {save_response_to_file,"response.txt"},
+                      {stream_to,pasture_meetup}
+                    ], infinity),
+            ok = gen_server:call(pasture_meetup,Ref),
+
             {ok,SupPid};
-        _ ->
-            oh_no
+        E ->
+            E
     end.
 
 stop(_State) ->
