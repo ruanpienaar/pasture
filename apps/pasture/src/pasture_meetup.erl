@@ -13,8 +13,7 @@
 
 -record(?STATE,{
     ibrowse_req_id, %% {ibrowse_req_id,{1418,674119,867248}}
-    stack=[],
-    entry_started=false
+    stack=[]
 }).
 
 start_link() ->
@@ -34,16 +33,17 @@ handle_cast(Msg, State) ->
     ?INFO("handle_cast : ~p\n",[Msg]),
     {noreply, State}.
 
-handle_info({ibrowse_async_response,_ReqId,Data},
-    #?STATE{ stack = Stack } = State)
-        %% when State#?STATE.ibrowse_req_id == ReqId
-        ->
-    %% ?INFO("Data : \n~p\n\n",[Data]),
-    ?INFO("Received data...\n"),
-    {noreply,State#?STATE{ stack = parse_json(Stack,Data) }};
-handle_info(Info, State) ->
-    ?INFO("handle_info : ~p\n",[Info]),
-    {noreply, State}.
+handle_info({ibrowse_async_headers,_,"200",_Headers},State) ->
+    {noreply,State};
+handle_info({ibrowse_async_response,_,Data},
+    #?STATE{ stack = Stack } = State) ->
+        %%?INFO("PROCESS STACK LENGTH : ~p\n",[length(Stack)]),
+        %% TODO: Build something that resolves massive stacks...
+        %%       For now, i assume that C:E meant the json was
+        %%       incomplete :)
+        {ok,NewStack} = parse_json(Stack,Data),
+        %%?INFO("NEW STACK LENGTH : ~p\n",[length(NewStack)]),
+        {noreply,State#?STATE{ stack = NewStack }}.
 
 terminate(_Reason, _State) ->
     ok.
@@ -51,47 +51,26 @@ terminate(_Reason, _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-parse_json([],Data) ->
-    Data;
 parse_json(Stack,Data) ->
     FullStack = lists:append(Stack,Data),
-    try
-        case re:run(FullStack, "([a-zA-Z0-9]+)\\r\\n(.*)", [global]) of
-            {match,[MS=[{_,End},{_,_},{Start,Length}]|_]} ->
-                ?INFO("     ...MS : ~p.\n",[MS]),
-                ?INFO("     ...match...\n"),
-                %% Could also just use the hex in the string
-                % +1 i think because of ".
-                FullEntry = string:substr(FullStack,Start+1,Length),
-                %% io:format("FullEntry : ~p\n\n",[FullEntry]),
-                mnesia:dirty_write(#?MODULE{entry=FullEntry}),
-                % +3 to remove \n\r\n
-                %%io:format("FullStack : ~p\n\n",[FullStack]),
-                % io:format("Rest = lists:nthtail(~p+5,~p)",
-                %     [End,FullStack]),
-                case length(FullStack) >= End+5 of
-                    true ->
-                        Rest = lists:nthtail(End+5,FullStack),
-                        parse_json(Rest,[]);
-                    false ->
-                        FullStack
-                end;
-            {match,MM} ->
-                ?INFO("     ...match with ~p\nData: ~p\n\n",[MM,Data]),
-                FullStack;
-            nomatch ->
-                ?INFO("     ...no match\n",[]),
-                FullStack
-        end
-    catch
-        error:badarg ->
-            ?WARNING("parse_json Crash\n~p\n",[erlang:get_stacktrace()]),
-            %% Clear the whole stack
-            [];
-        C:E ->
-            %% Clear the whole stack
-            ?WARNING("parse_json failure\n~p\n~p\n~p\n",
-                [C,E,erlang:get_stacktrace()]),
-            []
+    case string:tokens(FullStack,"\n") of
+        JsonObjs when is_list(JsonObjs), length(JsonObjs) > 1 ->
+            {ok,Rest} = parse_json_list(JsonObjs),
+            %%io:format("Rest:~p\n",[Rest]),
+            {ok,Rest}
     end.
 
+parse_json_list([]) ->
+    {ok,[]};
+parse_json_list([H|T]) ->
+    %%io:format("H : ~p\n",[list_to_binary(H)]),
+    try
+        Response = jsx:decode(list_to_binary(H)),
+        %%io:format("Response : ~p\n",[Response]),
+        mnesia:dirty_write(#?MODULE{entry=Response}),
+        parse_json_list(T)
+    catch
+        C:E ->
+            %%io:format("C:~p\nE:~p\n~p\n",[C,E,erlang:get_stacktrace()]),
+            {ok,lists:flatten(lists:append(H,T))}
+    end.
