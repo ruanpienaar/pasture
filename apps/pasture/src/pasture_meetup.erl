@@ -52,15 +52,20 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
 parse_json(Stack,Data) ->
-    FullStack = lists:append(Stack,Data),
-    case string:tokens(FullStack,"\n") of
-	[Obj] ->
-	    {ok,Rest} = parse_json_list([Obj]),
-	    {ok,Rest};
+    try
+        FullStack = lists:append(Stack,Data),
+        case string:tokens(FullStack,"\n") of
+    	[Obj] ->
+    	    {ok,Rest} = parse_json_list([Obj]),
+    	    {ok,Rest};
         JsonObjs when is_list(JsonObjs), length(JsonObjs) > 1 ->
             {ok,Rest} = parse_json_list(JsonObjs),
             %%io:format("Rest:~p\n",[Rest]),
             {ok,Rest}
+        end
+    catch
+        C:E ->
+            {ok,[]}
     end.
 
 parse_json_list([]) ->
