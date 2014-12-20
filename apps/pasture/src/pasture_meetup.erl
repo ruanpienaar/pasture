@@ -65,6 +65,7 @@ parse_json(Stack,Data) ->
         end
     catch
         C:E ->
+            lager:info("parse_json\nC:~p\nE:~p\n",[C,E]),
             {ok,[]}
     end.
 
