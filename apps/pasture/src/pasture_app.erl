@@ -15,9 +15,9 @@
 %% ===================================================================
 
 %% Dev
-start(ArgsList) ->
+start(_ArgsList) ->
     ok = start_deps([pasture, {reloader,start}]),
-    {ok,Master} = application:get_env(pasture, mnesia_master),
+    {ok,Master} = application:get_env(pasture, mnesia_master, {ok,node()}),
     mnesia_start(Master),
     %% Restart the connection if it fails.
     Ref =
@@ -34,9 +34,9 @@ mnesia_start(Master) ->
     case Master =:= node() of
         true ->
             Nodes = application:get_env(pasture, mnesia_nodes, [node()]),
-            io:format("ALive nodes() : ~p\n",[nodes()]),
-            AliveNodes = test_nodes(Nodes,Nodes),
-            io:format("Trying to install schema on ~p\n",[Nodes]),
+            lager:info("ALive nodes() : ~p\n",[nodes()]),
+            Nodes = test_nodes(Nodes,Nodes,20),
+            lager:info("Trying to install schema on ~p\n",[Nodes]),
             stopped = mnesia:stop(),
             ok = mnesia:set_master_nodes([Master]),
             case mnesia:create_schema(lists:reverse(Nodes)) of
@@ -50,9 +50,11 @@ mnesia_start(Master) ->
             try
                 Info = mnesia:table_info(pasture_meetup,attributes)
             catch
-                throw:_ ->
+                throw:Reason ->
+                    ?INFO("Table info failed\n~p\n",[Reason]),
                     throw(explode);
                 C:E ->
+                    ?INFO("Table info unhandled failed\n~p\n~p\n",[C,E]),
                     {atomic,ok} =
                         mnesia:create_table(
                                 pasture_meetup,
@@ -67,16 +69,18 @@ mnesia_start(Master) ->
             ?INFO("Not master, just booting...\n")
     end.
 
-test_nodes(Nodes,[]) ->
+test_nodes(_Nodes,[],0) ->
+    erlang:exit(mnesia_nodes_unavailable);
+test_nodes(Nodes,[],_Count) ->
     Nodes;
-test_nodes(Nodes,[H|T]) ->
+test_nodes(Nodes,[H|T],Count) ->
     case net_adm:ping(H) of
         pong ->
-            test_nodes(Nodes,T);
+            test_nodes(Nodes,T,Count);
         pang ->
             timer:sleep(500),
-            %% io:format("Waiting for nodes to become alive...",[]),
-            test_nodes(Nodes,Nodes)
+            lager:info("Waiting for nodes to become alive...",[]),
+            test_nodes(Nodes,Nodes,Count-1)
     end.
 
 start(_StartType, _StartArgs) ->
@@ -99,11 +103,11 @@ start_deps([{M,F,A}|T]) ->
     try M:F(A) catch _:_ -> ok end,
     start_deps(T);
 start_deps([App|T]) ->
-    io:format("Starting ... ~p ... \n\n",[App]),
+    lager:info("Starting ... ~p ... \n\n",[App]),
     case application:start(App) of
         ok ->
             start_deps(T);
         {error,{not_started,DepApp}} ->
-            io:format("Dependancy ... ~p ... needed \n\n",[DepApp]),
+            lager:info("Dependancy ... ~p ... needed \n\n",[DepApp]),
             start_deps([DepApp|[App|T]])
     end.

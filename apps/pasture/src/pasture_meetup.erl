@@ -42,7 +42,6 @@ handle_info({ibrowse_async_response,_,Data},
         %%       For now, i assume that C:E meant the json was
         %%       incomplete :)
         {ok,NewStack} = parse_json(Stack,Data),
-        %%?INFO("NEW STACK LENGTH : ~p\n",[length(NewStack)]),
         {noreply,State#?STATE{ stack = NewStack }}.
 
 terminate(_Reason, _State) ->
@@ -55,31 +54,30 @@ parse_json(Stack,Data) ->
     try
         FullStack = lists:append(Stack,Data),
         case string:tokens(FullStack,"\n") of
-    	[Obj] ->
-    	    {ok,Rest} = parse_json_list([Obj]),
-    	    {ok,Rest};
-        JsonObjs when is_list(JsonObjs), length(JsonObjs) > 1 ->
-            {ok,Rest} = parse_json_list(JsonObjs),
-            %%io:format("Rest:~p\n",[Rest]),
-            {ok,Rest}
+        	[Obj] ->
+        	    parse_json_list([Obj]);
+            JsonObjs when is_list(JsonObjs) ->
+                parse_json_list(JsonObjs)
         end
     catch
         C:E ->
-            lager:info("parse_json\nC:~p\nE:~p\n",[C,E]),
+            lager:info("parse_json\nC:~p\nE:~p\n~p\n",
+                        [C,E,erlang:get_stacktrac()]),
             {ok,[]}
     end.
 
 parse_json_list([]) ->
     {ok,[]};
 parse_json_list([H|T]) ->
-    %%io:format("H : ~p\n",[list_to_binary(H)]),
     try
         Response = jsx:decode(list_to_binary(H)),
-        %%io:format("Response : ~p\n",[Response]),
         mnesia:dirty_write(#?MODULE{entry=Response}),
         parse_json_list(T)
     catch
+        error:badarg ->
+            {ok,lists:flatten(lists:append(H,T))};
         C:E ->
-            %%io:format("C:~p\nE:~p\n~p\n",[C,E,erlang:get_stacktrace()]),
-            {ok,lists:flatten(lists:append(H,T))}
+            lager:info("parse_json_list\nC:~p\nE:~p\n~p\n",
+                        [C,E,erlang:get_stacktrac()]),
+            {ok,[]}
     end.
