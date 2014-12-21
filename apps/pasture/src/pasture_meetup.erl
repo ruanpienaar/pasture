@@ -22,8 +22,13 @@ start_link() ->
 init({}) ->
     {ok, #?STATE{}}.
 
-handle_call({ibrowse_req_id,ReqId}, _From, State) ->
-    ?INFO("handle_call : ~p\n",[{ibrowse_req_id,ReqId}]),
+handle_call(start, _From, State) ->
+    {ibrowse_req_id,ReqId} =
+        ibrowse:send_req(
+            "http://stream.meetup.com/2/rsvps",[],get,[],
+            [ {stream_chunk_size,1024 * 2},
+              {stream_to,pasture_meetup}
+            ], infinity),
     {reply, ok, State#?STATE{ibrowse_req_id=ReqId}};
 handle_call(Request, _From, State) ->
     ?INFO("handle_call : ~p\n",[Request]),

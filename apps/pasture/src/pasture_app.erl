@@ -20,13 +20,7 @@ start(_ArgsList) ->
     {ok,Master} = application:get_env(pasture, mnesia_master, {ok,node()}),
     mnesia_start(Master),
     %% Restart the connection if it fails.
-    Ref =
-        ibrowse:send_req(
-            "http://stream.meetup.com/2/rsvps",[],get,[],
-            [ {stream_chunk_size,1024 * 2},
-              {stream_to,pasture_meetup}
-            ], infinity),
-    ok = gen_server:call(pasture_meetup,Ref),
+    gen_server:call(pasture_meetup, start),
     %%{ok,_RanchListenerPid} = pasture_web:start(),
     ok.
 
@@ -58,6 +52,34 @@ mnesia_start(Master) ->
                     {atomic,ok} =
                         mnesia:create_table(
                                 pasture_meetup,
+                                [{type,set},
+                                 {disc_only_copies,Nodes},
+                                 {attributes,record_info(fields, pasture_meetup)}
+                               ]),
+                    {atomic,ok} =
+                        mnesia:create_table(
+                                pasture_event,
+                                [{type,set},
+                                 {disc_only_copies,Nodes},
+                                 {attributes,record_info(fields, pasture_meetup)}
+                               ]),
+                    {atomic,ok} =
+                        mnesia:create_table(
+                                pasture_group,
+                                [{type,set},
+                                 {disc_only_copies,Nodes},
+                                 {attributes,record_info(fields, pasture_meetup)}
+                               ]),
+                    {atomic,ok} =
+                        mnesia:create_table(
+                                pasture_member,
+                                [{type,set},
+                                 {disc_only_copies,Nodes},
+                                 {attributes,record_info(fields, pasture_meetup)}
+                               ]),
+                    {atomic,ok} =
+                        mnesia:create_table(
+                                pasture_venue,
                                 [{type,set},
                                  {disc_only_copies,Nodes},
                                  {attributes,record_info(fields, pasture_meetup)}
