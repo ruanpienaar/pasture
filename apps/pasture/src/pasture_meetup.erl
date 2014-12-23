@@ -91,5 +91,5 @@ parse_json_list([H|T]) ->
         C:E ->
             lager:info("parse_json_list\nC:~p\nE:~p\n~p\n",
                         [C,E,erlang:get_stacktrace()]),
-            exit(?MODULE,restart)
+            exit(whereis(?MODULE),restart)
     end.
