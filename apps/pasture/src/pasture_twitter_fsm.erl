@@ -90,8 +90,8 @@ code_change(_OldVsn, StateName, State, _Extra) ->
     io:format(" /// [~p] /// next state is : ~p \n",[?MODULE,next_state]),
     {ok, StateName, State}.
 
-connect() ->
-    io:format("\n\n ... CONNECTING ... \n\n").
+% connect() ->
+%     io:format("\n\n ... CONNECTING ... \n\n").
 
-stream() ->
-    io:format("\n\n ... STREAMING ... \n\n",[]).
+% stream() ->
+%     io:format("\n\n ... STREAMING ... \n\n",[]).

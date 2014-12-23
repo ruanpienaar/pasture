@@ -45,7 +45,7 @@ init({}) ->
 
 handle_call(update_status, _From, State) ->
     HttpMethod = "POST",
-    Status = "Hello Ladies + Gentlemen, a signed OAuth request!",
+    _Status = "Hello Ladies + Gentlemen, a signed OAuth request!",
     QString = "?include_entities=true",
     Timestamp = generate_timestamp(),
     NoOnce = base64:encode_to_string(crypto:rand_bytes(32)),
@@ -60,7 +60,7 @@ handle_call(update_status, _From, State) ->
         {"oauth_version",State#?STATE.oauth_version}
     ],
     URL = "https://api.twitter.com/1.1/statuses/update.json" ++ QString,
-    Signature =
+    _Signature =
         oauth:hmac_sha1_signature(HttpMethod, URL, Params,
                                                 {State#?STATE.oauth_consumer_key,
                                                   State#?STATE.oauth_consumer_secret,
