@@ -3,8 +3,7 @@
   {description, ""},
   {vsn, "1"},
   {registered, []},
-  {applications, [
-                  kernel,
+  {applications, [kernel,
                   stdlib,
                   lager,
                   ssl,

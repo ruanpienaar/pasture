@@ -24,13 +24,12 @@ create_table(Nodes) ->
 new(Objs) ->
     Rec =
         #pasture_group{
-            id            = pasture_ids:inc(?MODULE),
+            group_id      = pasture_utils:try_get_column(
+                                Objs,<<"group_id">>),
             group_city    = pasture_utils:try_get_column(
                                 Objs,<<"group_city">>),
             group_country = pasture_utils:try_get_column(
                                 Objs,<<"group_country">>),
-            group_id      = pasture_utils:try_get_column(
-                                Objs,<<"group_id">>),
             group_lat     = pasture_utils:try_get_column(
                                 Objs,<<"group_lat">>),
             group_lon     = pasture_utils:try_get_column(
@@ -45,4 +44,5 @@ new(Objs) ->
             group_urlname = pasture_utils:try_get_column(
                                 Objs,<<"group_urlname">>)
         },
-    ok = mnesia:dirty_write(Rec).
+    ok = mnesia:dirty_write(Rec),
+    {atomic,ok}.

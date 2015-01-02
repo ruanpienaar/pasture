@@ -2,16 +2,24 @@
 
 -behaviour(application).
 
--export([start/1]).
--export([start/2, stop/1]).
+-export([start/1, start/2,
+         stop/1,
+         start_deps/1
+        ]).
 
 -include("../include/pasture.hrl").
 
 start(_ArgsList) ->
+    mnesia:set_debug_level(verbose),
+    ok = start_deps([lager, ssl,
+        cowboy, oauth, ibrowse, mnesia]),
     ?INFO("Db init...\n"),
+    %% TODO: temp fix, should use rebar
+    application:load(pasture),
     ok = pasture_db:init(),
-    ?INFO("start deps...\n"),
-    ok = start_deps([pasture, {reloader,start}]),
+     %%ok = start_deps([pasture
+    %     %% , {reloader,start}
+     %%    ]),
     %%{ok,_RanchListenerPid} = pasture_web:start(),
     ok.
 
@@ -41,5 +49,7 @@ start_deps([App|T]) ->
             start_deps(T);
         {error,{not_started,DepApp}} ->
             lager:info("Dependancy ... ~p ... needed \n\n",[DepApp]),
-            start_deps([DepApp|[App|T]])
+            start_deps([DepApp|[App|T]]);
+        {error,{already_started,App}} ->
+            start_deps(T)
     end.

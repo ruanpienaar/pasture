@@ -1,14 +1,12 @@
--record(pasture_event,{id,
-                       event_id,
+-record(pasture_event,{event_id,
                        event_name,
                        event_url,
                        time
                       }).
 
--record(pasture_group,{id,
+-record(pasture_group,{group_id,
                        group_city,
                        group_country,
-                       group_id,
                        group_lat,
                        group_lon,
                        group_name,
@@ -17,23 +15,21 @@
                        group_urlname
                       }).
 
--record(pasture_member,{id,
-                        member_id,
+-record(pasture_member,{member_id,
                         member_name,
                         other_services,
                         photo
                        }).
 
--record(pasture_venue,{id,
+-record(pasture_venue,{venue_id,
                        lat,
                        lon,
-                       venue_id,
                        venue_name
                       }).
 
--record(pasture_ids,{tbl,
-                     id
-                    }).
+% -record(pasture_ids,{tbl,
+%                      id
+%                     }).
 
 -define(DEBUG(Msg),
         lager:debug(Msg)).

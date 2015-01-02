@@ -32,6 +32,7 @@ init([]) ->
     {ok, {{one_for_one, _Restarts=5, _WithInSeconds=10}, [
         %% ?CHILD(pasture_twitter_fsm, worker),
         %% ?CHILD(pasture_twitter, worker),
+        ?CHILD(pasture_db_batch, worker),
         ?CHILD(pasture_meetup, worker)
     ]}}.
 

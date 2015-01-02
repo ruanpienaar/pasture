@@ -24,10 +24,10 @@ create_table(Nodes) ->
 new(Objs) ->
     Rec =
         #pasture_venue{
-            id         = pasture_ids:inc(?MODULE),
             lat        = pasture_utils:try_get_column(Objs,<<"lat">>),
             lon        = pasture_utils:try_get_column(Objs,<<"lon">>),
             venue_id   = pasture_utils:try_get_column(Objs,<<"venue_id">>),
             venue_name = pasture_utils:try_get_column(Objs,<<"venue_name">>)
         },
-    ok = mnesia:dirty_write(Rec).
+    ok = mnesia:dirty_write(Rec),
+    {atomic,ok}.

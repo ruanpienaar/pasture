@@ -51,6 +51,9 @@ handle_info({ibrowse_async_response,
         %%?INFO("PROCESS STACK LENGTH : ~p\n",[length(Stack)]),
         %% TODO: Build something that resolves massive stacks...For now, i assume that C:E meant the json was
         %%       incomplete :)
+
+        %% TODO: how do i exit/or handle the exit better, rather
+        %% than a bad match.
         {ok,NewStack} = parse_json(Stack,Data),
         ok = ibrowse:stream_next(NewReqId),
         {noreply,State#?STATE{ stack = NewStack, ibrowse_req_id = NewReqId }}.
@@ -73,7 +76,7 @@ parse_json(Stack,Data) ->
         end
     catch
         C:E ->
-            lager:info("parse_json\nC:~p\nE:~p\n~p\n",
+            ?INFO("parse_json\nC:~p\nE:~p\n~p\n",
                         [C,E,erlang:get_stacktrace()]),
             {ok,[]}
     end.
@@ -81,15 +84,22 @@ parse_json(Stack,Data) ->
 parse_json_list([]) ->
     {ok,[]};
 parse_json_list([H|T]) ->
+    BinH = list_to_binary(H),
     try
-        Json = jsx:decode(list_to_binary(H)),
+        Json = jsx:decode(BinH),
         ok = pasture_db:json_to_recs(Json),
         parse_json_list(T)
     catch
-        error:badarg ->
+        error:Reason when Reason =:= badarg;
+                          Reason =:= {case_clause,initialdecimal};
+                          Reason =:= {case_clause,negative} ->
             {ok,lists:flatten(lists:append(H,T))};
+        error:{case_clause,MissingClause} ->
+            ?INFO("pasture_meetup error:{case_clause,~p}\n",[MissingClause]),
+            ?INFO("Tried decoding ~p\n",[BinH]),
+            exit(whereis(?MODULE),restart);
         C:E ->
-            lager:info("parse_json_list\nC:~p\nE:~p\n~p\n",
+            ?INFO("parse_json_list\nC:~p\nE:~p\n~p\n",
                         [C,E,erlang:get_stacktrace()]),
             exit(whereis(?MODULE),restart)
     end.

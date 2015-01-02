@@ -24,10 +24,27 @@ create_table(Nodes) ->
 new(Objs) ->
     Rec =
         #pasture_event{
-            id         = pasture_ids:inc(?MODULE),
             event_id   = pasture_utils:try_get_column(Objs,<<"event_id">>),
             event_name = pasture_utils:try_get_column(Objs,<<"event_name">>),
             event_url  = pasture_utils:try_get_column(Objs,<<"event_url">>),
             time       = pasture_utils:try_get_column(Objs,<<"time">>)
         },
+    dirty(Rec),
+    {atomic,ok}.
+
+new_trx(Objs) ->
+    Rec =
+        #pasture_event{
+            event_id   = pasture_utils:try_get_column(Objs,<<"event_id">>),
+            event_name = pasture_utils:try_get_column(Objs,<<"event_name">>),
+            event_url  = pasture_utils:try_get_column(Objs,<<"event_url">>),
+            time       = pasture_utils:try_get_column(Objs,<<"time">>)
+        },
+    trx(Rec),
+    {atomic,ok}.
+
+dirty(Rec) ->
     ok = mnesia:dirty_write(Rec).
+
+trx(Rec) ->
+    ok = mnesia:write(Rec).

@@ -24,7 +24,6 @@ create_table(Nodes) ->
 new(Objs) ->
     Rec =
         #pasture_member{
-            id             = pasture_ids:inc(?MODULE),
             member_id      = pasture_utils:try_get_column(
                 Objs,<<"member_id">>),
             member_name    = pasture_utils:try_get_column(
@@ -34,4 +33,5 @@ new(Objs) ->
             photo          = pasture_utils:try_get_column(
                 Objs,<<"other_services">>)
         },
-    ok = mnesia:dirty_write(Rec).
+    ok = mnesia:dirty_write(Rec),
+    {atomic,ok}.
