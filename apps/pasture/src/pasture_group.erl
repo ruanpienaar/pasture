@@ -22,7 +22,6 @@ create_table(Nodes) ->
     end.
 
 new(Objs) ->
-    Rec =
         #pasture_group{
             group_id      = pasture_utils:try_get_column(
                                 Objs,<<"group_id">>),
@@ -43,6 +42,4 @@ new(Objs) ->
                                     Objs,<<"group_topics">>)),
             group_urlname = pasture_utils:try_get_column(
                                 Objs,<<"group_urlname">>)
-        },
-    ok = mnesia:dirty_write(Rec),
-    {atomic,ok}.
+        }.

@@ -17,15 +17,17 @@ start(_ArgsList) ->
     %% TODO: temp fix, should use rebar
     application:load(pasture),
     ok = pasture_db:init(),
-     %%ok = start_deps([pasture
-    %     %% , {reloader,start}
-     %%    ]),
-    %%{ok,_RanchListenerPid} = pasture_web:start(),
+    ok = start_deps([pasture]),
+    {ok,_RanchListenerPid} = pasture_web:start(),
     ok.
 
 start(_StartType, _StartArgs) ->
     case pasture_sup:start_link() of
         {ok,SupPid} ->
+            %% TODO: mmm... find a beter way of doing this ......
+            {ok,_} = pasture_db_sup:start_link(),
+            {ok,C} = application:get_env(pasture, meetup_chunk_count),
+             pasture_sup:start_children(C),
             {ok,SupPid};
         E ->
             E

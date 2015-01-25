@@ -16,8 +16,11 @@
     stack=[]
 }).
 
+%% TODO: the supervisor didn't restart the process when it failed...
+% 2015-01-15 23:58:30.856 [error] <0.3914.0> Supervisor pasture_sup had child pasture_meetup_id started with {pasture_meetup,start_link,undefined} at <0.4045.0> exit with reason no match of right hand value {error,unknown_req_id} in pasture_meetup:handle_info/2 line 58 in context child_terminated
+
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, {}, []).
+    gen_server:start_link(?MODULE, {}, []).
 
 init({}) ->
     false = process_flag(trap_exit, true),
@@ -25,8 +28,7 @@ init({}) ->
         ibrowse:send_req(
             "http://stream.meetup.com/2/rsvps",[],get,[],
             [ {stream_chunk_size,1024 * 2},
-              %% {stream_to,pasture_meetup}
-              {stream_to,{pasture_meetup, once}}
+              {stream_to,{self(), once}}
             ],
             infinity),
     {ok,#?STATE{ibrowse_req_id=ReqId}}.
@@ -43,8 +45,12 @@ handle_info({'EXIT', _From, Reason},#?STATE{ibrowse_req_id = RI} = State) ->
     {noreply,State#?STATE{ibrowse_req_id=undefined}};
 handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
     ?INFO("ibrowse_async_headers : ~p\n",[Headers]),
-    ok = ibrowse:stream_next(ReqId),
-    {noreply,State};
+    case ibrowse:stream_next(ReqId) of
+        {error,unknown_req_id} ->
+            {stop, normal, State};
+        ok ->
+            {noreply,State}
+    end;
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ stack = Stack } = State) ->
         %%?INFO("Next\n",[]),
@@ -54,13 +60,24 @@ handle_info({ibrowse_async_response,
 
         %% TODO: how do i exit/or handle the exit better, rather
         %% than a bad match.
-        {ok,NewStack} = parse_json(Stack,Data),
-        ok = ibrowse:stream_next(NewReqId),
-        {noreply,State#?STATE{ stack = NewStack, ibrowse_req_id = NewReqId }}.
+        case parse_json(Stack,Data) of
+            {ok,NewStack} ->
+                case ibrowse:stream_next(NewReqId) of
+                    {error,unknown_req_id} ->
+                        {stop, normal, State};
+                    ok ->
+                        {noreply,
+                            State#?STATE{ stack = NewStack,
+                                          ibrowse_req_id =NewReqId }}
+                end;
+            _true ->
+                {stop, normal, State}
+        end.
 
 terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->
     ?INFO("pasture_meetup terminate ~p\n",[Reason]),
-    ibrowse:stream_close(RI).
+    ibrowse:stream_close(RI),
+    ok.
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.

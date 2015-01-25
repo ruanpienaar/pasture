@@ -1,6 +1,13 @@
 -module(pasture_db_migration).
 
--export([ migrate/0 ]).
+-export([ migrate_1/0,
+          migrate_2/0,
+          migrate_3/0,
+          migrate_4/0,
+          migrate_5/0,
+          migrate_6/0%,
+%          id_check/2
+ ]).
 
 %% edit the original record before running migrate....
 %% PREVIOUS -> -record(test,{id,col1,col2}).
@@ -38,29 +45,36 @@
                        venue_name
                       }).
 
-migrate() ->
+migrate_1() ->
     Nodes = application:get_env(pasture, mnesia_nodes, [node()]),
 	Tables = [pasture_event,pasture_group,pasture_venue,pasture_member],
-
     %% Copy, and delete original...
-    ok = bck_tables(Nodes,Tables),
-    {atomic,ok} = mnesia:transaction( fun() ->
-        transfer_entries(Tables)
-    end ),
-    ok = del_tables(Tables),
+    ok = bck_tables(Nodes,Tables).
 
-    %% Create new table spec, and restore
-    %% transformed data.
-    ok = create_new_migrated_tbls(Nodes,Tables),
+migrate_2() ->
+    %% This can't all be in 1 trx
+    Tables = [pasture_event,pasture_group,pasture_venue,pasture_member],
+    ok = transfer_entries(Tables).
 
-    {atomic,ok} = mnesia:transaction( fun() ->
-        transform_data_and_restore(Tables)
-    end ),
+migrate_3() ->
+    Tables = [pasture_event,pasture_group,pasture_venue,pasture_member],
+    ok = del_tables(Tables).
 
+migrate_4() ->
+    %% Create new table spec
+    Nodes = application:get_env(pasture, mnesia_nodes, [node()]),
+    Tables = [pasture_event,pasture_group,pasture_venue,pasture_member],
+    ok = create_new_migrated_tbls(Nodes,Tables).
+
+migrate_5() ->
+    %% restore transformed data.
+    Tables = [pasture_event,pasture_group,pasture_venue,pasture_member],
+    transform_data_and_restore(Tables).
+
+migrate_6() ->
+    Tables = [pasture_event,pasture_group,pasture_venue,pasture_member],
     %% Remove Bck Tables...
-    ok = del_bck_tables(Tables),
-
-    ok.
+    del_bck_tables(Tables).
 
 %% -----------------------
 
@@ -123,17 +137,29 @@ transfer_entries([]) ->
     ok;
 transfer_entries([Tbl|T]) ->
     BckTbl = bck_name(Tbl),
-    ok = copy_tbl(Tbl,BckTbl,mnesia:first(Tbl)),
+    ok = copy_tbl(Tbl,BckTbl,mnesia:dirty_first(Tbl),0,[]),
     transfer_entries(T).
 
-copy_tbl(_Tbl,_BckTbl,'$end_of_table') ->
+copy_tbl(_Tbl,_BckTbl,'$end_of_table',_,[]) ->
     ok;
-copy_tbl(Tbl,BckTbl,Id) ->
-    [Rec] = mnesia:read(Tbl, Id),
+copy_tbl(_Tbl,_BckTbl,'$end_of_table',_,Stack) ->
+    commit_stack(Stack);
+copy_tbl(Tbl,BckTbl,Id,500,Stack) ->
+    ok = commit_stack(Stack),
+    copy_tbl(Tbl,BckTbl,Id,0,[]);
+copy_tbl(Tbl,BckTbl,Id,Count,Stack) ->
+    [Rec] = mnesia:dirty_read(Tbl, Id),
     RecList = tuple_to_list(Rec),
     BckRec = list_to_tuple([BckTbl] ++ lists:nthtail(1,RecList)),
-    ok = mnesia:write(BckRec),
-    copy_tbl(Tbl,BckTbl,mnesia:next(Tbl,Id)).
+    copy_tbl(Tbl,BckTbl,mnesia:dirty_next(Tbl,Id),Count+1,[BckRec|Stack]).
+
+commit_stack(Stack) ->
+    {atomic,ok} = mnesia:transaction( fun() ->
+        lists:foreach(fun(Rec) ->
+            ok = mnesia:write(Rec)
+        end, Stack)
+    end),
+    ok.
 
 del_tables([]) ->
     ok;
@@ -202,16 +228,29 @@ transform_data_and_restore([]) ->
     ok;
 transform_data_and_restore([H|T]) ->
     BckTbl = bck_name(H),
-    ok = restore_tbl(H,BckTbl,mnesia:first(BckTbl)),
+    ok = restore_tbl(H,BckTbl,mnesia:dirty_first(BckTbl),0,[]),
     transform_data_and_restore(T).
 
-restore_tbl(_OrigTbl,_BckTbl,'$end_of_table') ->
+% restore_tbl(_OrigTbl,_BckTbl,'$end_of_table') ->
+%     ok;
+% restore_tbl(OrigTbl,BckTbl,Id) ->
+%     [Rec] = mnesia:dirty_read(BckTbl, Id),
+%     Transform = transform_entry(OrigTbl,Rec),
+%     %% ok = mnesia:write(Transform),
+%     restore_tbl(OrigTbl,BckTbl,mnesia:next(BckTbl,Id)).
+
+restore_tbl(_Tbl,_BckTbl,'$end_of_table',_,[]) ->
     ok;
-restore_tbl(OrigTbl,BckTbl,Id) ->
-    [Rec] = mnesia:read(BckTbl, Id),
-    Transform = transform_entry(OrigTbl,Rec),
-    ok = mnesia:write(Transform),
-    restore_tbl(OrigTbl,BckTbl,mnesia:next(BckTbl,Id)).
+restore_tbl(_Tbl,_BckTbl,'$end_of_table',_,Stack) ->
+    commit_stack(Stack);
+restore_tbl(Tbl,BckTbl,Id,500,Stack) ->
+    ok = commit_stack(Stack),
+    restore_tbl(Tbl,BckTbl,Id,0,[]);
+restore_tbl(Tbl,BckTbl,Id,Count,Stack) ->
+    [Rec] = mnesia:dirty_read(BckTbl, Id),
+    NewRec = transform_entry(Tbl,Rec),
+    restore_tbl(Tbl,BckTbl,mnesia:dirty_next(BckTbl,Id),
+                Count+1,[NewRec|Stack]).
 
 transform_entry(test,{test_bck,_Id,V1,V2}) ->
     #test{col1=V1,col2=V2};
@@ -248,9 +287,13 @@ del_bck_tables([H|T]) ->
     {atomic,ok} = mnesia:delete_table(bck_name(H)),
     del_bck_tables(T).
 
+% id_check(pasture_event,Id) ->
+%     mnesia:
+
 
 %% -----
 %% Misc
 
 bck_name(Tbl) ->
     list_to_atom(atom_to_list(Tbl)++"_bck").
+

@@ -5,7 +5,8 @@
 %% API
 -export([
     start_link/0,
-    start_twitter/0
+    start_child/0,
+    start_children/1
 ]).
 
 %% Supervisor callbacks
@@ -21,18 +22,23 @@
 start_link() ->
     supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-start_twitter() ->
-    gen_server:call(pasture_twitter,update_status).
-
 %% ===================================================================
 %% Supervisor callbacks
 %% ===================================================================
 
 init([]) ->
-    {ok, {{one_for_one, _Restarts=5, _WithInSeconds=10}, [
-        %% ?CHILD(pasture_twitter_fsm, worker),
-        %% ?CHILD(pasture_twitter, worker),
-        ?CHILD(pasture_db_batch, worker),
-        ?CHILD(pasture_meetup, worker)
-    ]}}.
+    C = pasture_meetup,
+    RestartStrategy = simple_one_for_one,
+    MaxRestarts = 1000,
+    MaxSecondsBetweenRestarts = 3600,
+    SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
+    {ok, {SupFlags,
+          [{pasture_meetup_id,{C, start_link, []},temporary, 1000, worker, [C]}
+          ]}
+    }.
 
+start_child() ->
+    supervisor:start_child(?MODULE, []).
+
+start_children(X) ->
+    [ start_child() || _N <- lists:seq(1,X) ].
