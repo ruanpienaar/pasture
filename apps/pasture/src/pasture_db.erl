@@ -16,14 +16,10 @@ init_master(MnesiaTbls,MasterNode) when MasterNode == node() ->
     F = fun(Node) -> net_kernel:connect(Node) end,
     ok = wait_for_cluster(Nodes,F),
     ?INFO("Checking cluster schema...\n"),
-
-
     %% TODO: use
     %% mnesia:table_info(schema,disc_copies).
     %% To check that
-
     F2 = fun(Node,{SNodes,NoSNodes}) ->
-
         %% TODO: check both...
         %% case rpc:call(Node,mnesia,table_info,[schema, all]) of
         case rpc:call(Node,mnesia,table_info,[schema, disc_copies]) of
@@ -44,7 +40,6 @@ init_master(MnesiaTbls,MasterNode) when MasterNode == node() ->
     case lists:foldl(F2,{[],[]},Nodes) of
         %% Run once to create all...
         {[],NoSchemaNodes} ->
-
             %% If it has first run dummy ram schema, delete it.
             lists:foreach(fun(Node) ->
                 case rpc:call(Node,mnesia,table_info,[schema,ram_copies]) of
@@ -55,7 +50,6 @@ init_master(MnesiaTbls,MasterNode) when MasterNode == node() ->
                         ok
                 end
             end, NoSchemaNodes),
-
             %% Create the schema on all nodes...
             ?INFO("Trying to create schema...\n"),
             try
@@ -84,15 +78,13 @@ init_master(MnesiaTbls,MasterNode) when MasterNode == node() ->
             end;
         {SchemaNodes,NoSchemaNodes} ->
             ?INFO("Some nodes have schema, others not...\n{~p,~p}",[SchemaNodes,NoSchemaNodes]),
-
             %% Fix the nodes, with no schema....
-
             %% TODO: create schema on NoSchemaNodes
             lists:map(fun(_NSNode) ->
                 ok
                 % do something like add extra db node, or something...
             end, NoSchemaNodes),
-
+            Nodes = SchemaNodes ++ NoSchemaNodes,
             %% Here i assume, everyone has the synced schema....
             lists:map(fun(SNode) ->
                 case rpc:call(SNode, application, get_application,
@@ -107,7 +99,10 @@ init_master(MnesiaTbls,MasterNode) when MasterNode == node() ->
             mnesia:wait_for_tables(MnesiaTbls,infinity),
             mnesia:start()
     end,
-    ok = mnesia:set_master_nodes([MasterNode]);
+    ok = mnesia:set_master_nodes([MasterNode]),
+    lists:foreach(fun(N) ->
+        rpc:call(N,application,start,[pasture])
+    end, Nodes);
 %% All the other, non master nodes, just idle...
 init_master(_MnesiaTbls,_MasterNode) ->
     %% Here i assume that , if the schema is ready,

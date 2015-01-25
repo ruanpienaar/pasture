@@ -17,7 +17,6 @@ start(_ArgsList) ->
     %% TODO: temp fix, should use rebar
     application:load(pasture),
     ok = pasture_db:init(),
-    ok = start_deps([pasture]),
     {ok,_RanchListenerPid} = pasture_web:start(),
     ok.
 
