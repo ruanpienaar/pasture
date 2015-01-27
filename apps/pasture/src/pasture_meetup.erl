@@ -51,6 +51,10 @@ handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
         ok ->
             {noreply,State}
     end;
+
+handle_info({_,
+                _,{error,connection_closed}},#?STATE{ stack = _ } = State) ->
+	exit(whereis(?MODULE),restart);
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ stack = Stack } = State) ->
         %%?INFO("Next\n",[]),
@@ -64,14 +68,16 @@ handle_info({ibrowse_async_response,
             {ok,NewStack} ->
                 case ibrowse:stream_next(NewReqId) of
                     {error,unknown_req_id} ->
-                        {stop, normal, State};
+                        exit(whereis(?MODULE),restart);
                     ok ->
                         {noreply,
                             State#?STATE{ stack = NewStack,
                                           ibrowse_req_id =NewReqId }}
                 end;
-            _true ->
-                {stop, normal, State}
+            error ->
+                exit(whereis(?MODULE),restart);
+	   Else ->
+		exit(whereis(?MODULE),restart)
         end.
 
 terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->
@@ -95,7 +101,7 @@ parse_json(Stack,Data) ->
         C:E ->
             ?INFO("parse_json\nC:~p\nE:~p\n~p\n",
                         [C,E,erlang:get_stacktrace()]),
-            {ok,[]}
+            error
     end.
 
 parse_json_list([]) ->
@@ -114,9 +120,9 @@ parse_json_list([H|T]) ->
         error:{case_clause,MissingClause} ->
             ?INFO("pasture_meetup error:{case_clause,~p}\n",[MissingClause]),
             ?INFO("Tried decoding ~p\n",[BinH]),
-            exit(whereis(?MODULE),restart);
+            error;
         C:E ->
             ?INFO("parse_json_list\nC:~p\nE:~p\n~p\n",
                         [C,E,erlang:get_stacktrace()]),
-            exit(whereis(?MODULE),restart)
+            error
     end.
