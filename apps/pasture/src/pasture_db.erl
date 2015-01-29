@@ -57,7 +57,7 @@ init(_MnesiaTbls,_MasterNode) ->
     %% TODO: how do you properly know when mnesia has created the schema...?
     case mnesia:system_info(use_dir) of
         true ->
-            %% Maybe also subs and pause ?
+            nodes_watchdog:subscribe_and_pause(),
             ok;
         false ->
             % Subscribe to mnesia system, and wait until it's up....
