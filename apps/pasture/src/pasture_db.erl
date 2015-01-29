@@ -27,9 +27,9 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     timer:sleep(2000),
     case mnesia:create_schema(Nodes) of
         ok ->
-            mnesia:start();
+            ok = mnesia:start();
         {error,{_,{already_exists,_}}} ->
-            ok
+            ok = mnesia:start()
     end,
 
     lists:foreach(fun(RN) ->
