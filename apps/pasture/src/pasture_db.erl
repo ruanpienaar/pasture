@@ -27,8 +27,10 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     timer:sleep(2000),
     case mnesia:create_schema(Nodes) of
         ok ->
+            ?INFO("Schema created ...\n"),
             ok = mnesia:start();
         {error,{_,{already_exists,_}}} ->
+            ?INFO("Schema already created ...\n"),
             ok = mnesia:start()
     end,
 
@@ -42,8 +44,10 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     end, ExtraNodes),
 
     lists:foreach(fun(Tbl) ->
+        ?INFO("Creating table ~p ...\n\n",[Tbl]),
         Tbl:create_table([MasterNode]),
         lists:foreach(fun(EN) ->
+            ?INFO("Add table copy ~p on node ~p ...\n\n",[Tbl, EN]),
             mnesia:add_table_copy(Tbl, EN, disc_only_copies)
         end, ExtraNodes)
     end, MnesiaTbls),
