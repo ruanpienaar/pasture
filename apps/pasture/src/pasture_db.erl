@@ -24,13 +24,10 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     mnesia:change_config(extra_db_nodes, ExtraNodes),
     stopped = mnesia:stop(),
     ?INFO("Trying to install schema on ~p\n\n",[Nodes]),
-
-    timer:sleep(500),
+    timer:sleep(2000),
     case mnesia:create_schema(Nodes) of
         ok ->
-            lists:foreach(fun(MN) ->
-                rpc:call(MN, mnesia, start, [])
-            end, Nodes);
+            mnesia:start();
         {error,{_,{already_exists,_}}} ->
             ok
     end,
@@ -42,7 +39,8 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
             {error,{already_started,mnesia}} ->
                 ok
         end
-    end, Nodes),
+    end, ExtraNodes),
+
     lists:foreach(fun(Tbl) ->
         Tbl:create_table([MasterNode]),
         lists:foreach(fun(EN) ->
