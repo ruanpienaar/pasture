@@ -10,7 +10,8 @@
                   cowboy,
                   oauth,
                   ibrowse,
-                  mnesia
+                  %%mnesia,
+                  nodes
                  ]},
   {mod, { pasture_app, []}},
   {env, []}

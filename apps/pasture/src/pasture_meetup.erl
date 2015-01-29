@@ -23,6 +23,7 @@ start_link() ->
     gen_server:start_link(?MODULE, {}, []).
 
 init({}) ->
+
     false = process_flag(trap_exit, true),
     {ibrowse_req_id,ReqId} =
         ibrowse:send_req(

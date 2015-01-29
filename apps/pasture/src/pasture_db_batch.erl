@@ -22,6 +22,9 @@
 
 % ---
 
+%% TODO: make the db batch, increase in size, when a node is down,
+%% and when mnesia aborts, because the majotiry flag is set to true.
+
 add({Type,Obj}) ->
     gen_server:call(?MODULE,{Type,Obj},infinity).
 

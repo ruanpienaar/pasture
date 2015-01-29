@@ -10,23 +10,25 @@
 -include("../include/pasture.hrl").
 
 start(_ArgsList) ->
-    mnesia:set_debug_level(verbose),
-    ok = start_deps([lager, ssl,
-        cowboy, oauth, ibrowse, mnesia]),
-    ?INFO("Db init...\n"),
-    %% TODO: temp fix, should use rebar
-    application:load(pasture),
-    ok = pasture_db:init(),
-    {ok,_RanchListenerPid} = pasture_web:start(),
+    % ok = start_deps([lager, ssl, cowboy, oauth, ibrowse,
+    %                  nodes]),
+    % ExtraNodes = pasture_db:init(),
+    % %%?INFO("ExtraNodes : ~p.....................\n",[ExtraNodes]),
+    % ok = lists:foreach(fun(N) ->
+    %     ok = rpc:call(N, pasture_app, start_deps, [[pasture]])
+    % end, ExtraNodes),
+    % ?INFO(" STARTED \n\n\n ............... "),
+    % %% {ok,_RanchListenerPid} = pasture_web:start(),
     ok.
 
 start(_StartType, _StartArgs) ->
     case pasture_sup:start_link() of
         {ok,SupPid} ->
-            %% TODO: mmm... find a beter way of doing this ......
+            ok = pasture_db:init(),
+            %% {ok,_RanchListenerPid} = pasture_web:start(),
             {ok,_} = pasture_db_sup:start_link(),
             {ok,C} = application:get_env(pasture, meetup_chunk_count),
-             pasture_sup:start_children(C),
+            pasture_sup:start_children(C),
             {ok,SupPid};
         E ->
             E

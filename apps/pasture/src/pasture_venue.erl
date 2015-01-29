@@ -15,7 +15,8 @@ create_table(Nodes) ->
                         ?MODULE,
                         [{type,set},
                          {disc_only_copies,Nodes},
-                         {attributes,record_info(fields, ?MODULE)}
+                         {attributes,record_info(fields, ?MODULE)},
+                         {majority, true}
                        ]);
         C:E ->
             throw({stop,[{c,C},{e,E}]})

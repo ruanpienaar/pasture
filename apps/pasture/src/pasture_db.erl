@@ -7,142 +7,61 @@
 -include("../include/pasture.hrl").
 
 init() ->
-    Master = application:get_env(pasture, mnesia_master, node()),
-    MnesiaTbls=[pasture_event,pasture_group,pasture_venue,pasture_member],
-    ok = init_master(MnesiaTbls,Master).
+    mnesia:set_debug_level(verbose),
+    ?INFO("Db init...\n"),
+    {ok,Master} = application:get_env(nodes, master_db_node),
+    ?INFO("Master node : ~p\n",[Master]),
+    MnesiaTbls=[pasture_event,
+                pasture_group,
+                pasture_venue,
+                pasture_member],
+    init(MnesiaTbls,Master).
 
-init_master(MnesiaTbls,MasterNode) when MasterNode == node() ->
-    Nodes = application:get_env(pasture, mnesia_nodes, [node()]),
-    F = fun(Node) -> net_kernel:connect(Node) end,
-    ok = wait_for_cluster(Nodes,F),
-    ?INFO("Checking cluster schema...\n"),
-    %% TODO: use
-    %% mnesia:table_info(schema,disc_copies).
-    %% To check that
-    F2 = fun(Node,{SNodes,NoSNodes}) ->
-        %% TODO: check both...
-        %% case rpc:call(Node,mnesia,table_info,[schema, all]) of
-        case rpc:call(Node,mnesia,table_info,[schema, disc_copies]) of
+init(MnesiaTbls,MasterNode) when MasterNode == node() ->
+    {ok,Nodes} = application:get_env(nodes, db_nodes),
+    [ExtraNodes] = [ Nodes -- [node()] ],
+    ?INFO("Extra nodes : ~p\n\n",[ExtraNodes]),
+    mnesia:change_config(extra_db_nodes, ExtraNodes),
+    stopped = mnesia:stop(),
+    ?INFO("Trying to install schema on ~p\n\n",[Nodes]),
 
-            {aborted,{no_exists,schema,disc_copies}} ->
-                %% If deleted on a node....
-                {SNodes,[Node|NoSNodes]};
-            {badrpc,{'EXIT',{aborted,{no_exists,schema,all}}}} ->
-                %% Case nobody has schema...
-                {SNodes,[Node|NoSNodes]};
-            [] ->
-                {SNodes,[Node|NoSNodes]};
-            _ ->
-                %% How do we handle already created nodes...
-                {[Node|SNodes],NoSNodes}
-        end
-    end,
-    case lists:foldl(F2,{[],[]},Nodes) of
-        %% Run once to create all...
-        {[],NoSchemaNodes} ->
-            %% If it has first run dummy ram schema, delete it.
-            lists:foreach(fun(Node) ->
-                case rpc:call(Node,mnesia,table_info,[schema,ram_copies]) of
-                    [Node] ->
-                        stopped = rpc:call(Node,mnesia,stop,[]),
-                        mnesia:delete_schema([Node]);
-                    [] ->
-                        ok
-                end
-            end, NoSchemaNodes),
-            %% Create the schema on all nodes...
-            ?INFO("Trying to create schema...\n"),
-            try
-            case mnesia:create_schema(NoSchemaNodes) of
-                ok ->
-                    ?INFO("Schema Created...\n"),
-                    [ begin
-                        ok = rpc:call(N, mnesia, start, [])
-                    end || N <- NoSchemaNodes ],
-                    [ begin
-                        Tbl:create_table(NoSchemaNodes)
-                      end || Tbl <- MnesiaTbls ],
-                    mnesia:wait_for_tables(MnesiaTbls,infinity);
-                {error,{Node,{already_exists,Node}}} ->
-                    %% How would this ever happen?
-                    ?INFO("Schema issue {error,{_Node,{already_exists,~p}}}...\n",[Node]),
-                    erlang:exit(mnesia_schema_issue);
-                {error,{RemoteNode,{_,RemoteNode,nodedown}}} ->
-                    ?INFO("Schema issue {error,{~p,{_,~p,nodedown}}}...\n",
-                        [RemoteNode]),
-                    erlang:exit(mnesia_nodes_unavailable)
-            end
-            catch
-                C:E ->
-                    ?INFO("~p\n",[{C,E}])
-            end;
-        {SchemaNodes,NoSchemaNodes} ->
-            ?INFO("Some nodes have schema, others not...\n{~p,~p}",[SchemaNodes,NoSchemaNodes]),
-            %% Fix the nodes, with no schema....
-            %% TODO: create schema on NoSchemaNodes
-            lists:map(fun(_NSNode) ->
-                ok
-                % do something like add extra db node, or something...
-            end, NoSchemaNodes),
-            Nodes = SchemaNodes ++ NoSchemaNodes,
-            %% Here i assume, everyone has the synced schema....
-            lists:map(fun(SNode) ->
-                case rpc:call(SNode, application, get_application,
-                              [mnesia]) of
-                    undefined ->
-                        %% try because, the other node, could still be starting up.
-                        ok = try_start_mnesia(SNode);
-                    {ok,mnesia} ->
-                        ok
-                end
-            end, SchemaNodes ++ NoSchemaNodes),
-            mnesia:wait_for_tables(MnesiaTbls,infinity),
-            mnesia:start()
-    end,
-    ok = mnesia:set_master_nodes([MasterNode]),
-    lists:foreach(fun(N) ->
-        rpc:call(N,application,start,[pasture])
-    end, Nodes);
-%% All the other, non master nodes, just idle...
-init_master(_MnesiaTbls,_MasterNode) ->
-    %% Here i assume that , if the schema is ready,
-    %% we can carry on, and get pasture started,
-    %% By starting mnesia...
-    try
-        TblInfo=mnesia:table_info(schema, all),
-        mnesia:start()
-    catch
-        exit:{aborted,{no_exists,schema,all}} ->
-        %% I THINK ...
-            mnesia:start()
-    end.
-
-try_start_mnesia(Node) ->
-    try_start_mnesia(Node,10).
-
-try_start_mnesia(Node,0) ->
-    ?INFO("Coudn't start mnesia on ~p\n",[Node]),
-    erlang:exit(remote_mnesia_couldnt_start);
-try_start_mnesia(Node,Count) ->
-    case rpc:call(Node, mnesia, start, []) of
-        {error,{not_started,NotStarted}} ->
-            ?INFO("Retrying mnesia start, ~p is not started on the remote node...\n",[NotStarted]),
-            timer:sleep(50),
-            try_start_mnesia(Node,Count-1);
+    timer:sleep(500),
+    case mnesia:create_schema(Nodes) of
         ok ->
+            lists:foreach(fun(MN) ->
+                rpc:call(MN, mnesia, start, [])
+            end, Nodes);
+        {error,{_,{already_exists,_}}} ->
+            ok
+    end,
+
+    lists:foreach(fun(RN) ->
+        case rpc:call(RN, application, start, [mnesia]) of
+            ok ->
+                ok;
+            {error,{already_started,mnesia}} ->
+                ok
+        end
+    end, Nodes),
+    lists:foreach(fun(Tbl) ->
+        Tbl:create_table([MasterNode]),
+        lists:foreach(fun(EN) ->
+            mnesia:add_table_copy(Tbl, EN, disc_only_copies)
+        end, ExtraNodes)
+    end, MnesiaTbls),
+    mnesia:wait_for_tables(MnesiaTbls, infinity),
+    ok;
+init(_MnesiaTbls,_MasterNode) ->
+    %% TODO: how do you properly know when mnesia has created the schema...?
+    case mnesia:system_info(use_dir) of
+        true ->
+            %% Maybe also subs and pause ?
+            ok;
+        false ->
+            % Subscribe to mnesia system, and wait until it's up....
+            nodes_watchdog:subscribe_and_pause(),
             ok
     end.
-
-wait_for_cluster(Nodes,F) ->
-    check_node_status(false,Nodes,F).
-
-check_node_status(true,_,_F) ->
-    ?INFO("All nodes ready...\n\n"),
-    ok;
-check_node_status(false,Nodes,F) ->
-    ?INFO("check_node_status ~p...\n\n",[Nodes]),
-    timer:sleep(100),
-    check_node_status(lists:all(F, Nodes),Nodes,F).
 
 json_to_recs([]) ->
     ok;
