@@ -31,20 +31,13 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
         ok ->
             ?INFO("Schema created ...\n"),
             ok = mnesia:start();
-        {error,{_,{already_exists,_}}} ->
-            ?INFO("Schema already created ...\n"),
+        {error,{NNN,{already_exists,NNN}}} ->
+            ?INFO("Schema already created on ~p ...\n",[NNN]),
             ok = mnesia:start()
     end,
-
     lists:foreach(fun(RN) ->
-        case rpc:call(RN, application, start, [mnesia]) of
-            ok ->
-                ok;
-            {error,{already_started,mnesia}} ->
-                ok
-        end
+        rpc:call(RN, mnesia, start, [])
     end, ExtraNodes),
-
     lists:foreach(fun(Tbl) ->
         ?INFO("Creating table ~p ...\n\n",[Tbl]),
         Tbl:create_table([MasterNode]),
