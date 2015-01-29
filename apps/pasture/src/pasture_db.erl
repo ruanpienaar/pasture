@@ -24,7 +24,7 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     mnesia:change_config(extra_db_nodes, ExtraNodes),
     lists:foreach(fun(SN) ->
         stopped = rpc:call(SN, mnesia, stop, [])
-    end, ExtraNodes),
+    end, Nodes),
     ?INFO("Trying to install schema on ~p\n\n",[Nodes]),
     timer:sleep(2000),
     case mnesia:create_schema(Nodes) of
