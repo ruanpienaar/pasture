@@ -33,7 +33,7 @@ handle_call(subscribe_and_pause,From,State) ->
     ?INFO("Paused and subscribing to mnesia system...."),
     N = node(),
     {ok,N} = mnesia:subscribe(system),
-    %% stopped = mnesia:stop(),
+    stopped = mnesia:stop(),
     {noreply, State#?STATE{ ref = From } };
 handle_call(_Request, _From, State) ->
     {reply, {error, unknown_call}, State}.

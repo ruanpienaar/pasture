@@ -22,9 +22,7 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     [ExtraNodes] = [ Nodes -- [node()] ],
     ?INFO("Extra nodes : ~p\n\n",[ExtraNodes]),
     mnesia:change_config(extra_db_nodes, ExtraNodes),
-    lists:foreach(fun(SN) ->
-        stopped = rpc:call(SN, mnesia, stop, [])
-    end, Nodes),
+    stopped = mnesia:stop(),
     ?INFO("Trying to install schema on ~p\n\n",[Nodes]),
     timer:sleep(2000),
     case mnesia:create_schema(Nodes) of
@@ -49,16 +47,7 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     mnesia:wait_for_tables(MnesiaTbls, infinity),
     ok;
 init(_MnesiaTbls,_MasterNode) ->
-    %% TODO: how do you properly know when mnesia has created the schema...?
-    case mnesia:system_info(use_dir) of
-        true ->
-            nodes_watchdog:subscribe_and_pause(),
-            ok;
-        false ->
-            % Subscribe to mnesia system, and wait until it's up....
-            nodes_watchdog:subscribe_and_pause(),
-            ok
-    end.
+    stopped = mnesia:stop().
 
 json_to_recs([]) ->
     ok;
