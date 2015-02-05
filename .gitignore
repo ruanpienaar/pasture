@@ -11,3 +11,4 @@ erl_crash.dump
 *.app
 /rel/pasture
 log
+apps/*/.rebar/erlcinfo
