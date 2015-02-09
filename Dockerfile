@@ -3,7 +3,7 @@
 FROM resin/rpi-raspbian:wheezy-2015-02-08
 
 RUN apt-get -q update && apt-get install -y erlang
-RUN cd pasture && make rel
+RUN make rel
 
 COPY . /app
 
