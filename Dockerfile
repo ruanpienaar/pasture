@@ -3,8 +3,8 @@
 FROM resin/rpi-raspbian:wheezy-2015-02-08
 
 RUN apt-get -q update && apt-get install -y erlang
-RUN make rel
 
 COPY . /app
 
+CMD ["make rel"]
 CMD ["rel/pasture/bin/pasture", "start"]
