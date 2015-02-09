@@ -1,5 +1,5 @@
 ## Name of the node
--name p1@pi1.home
+-name p1@127.0.0.1
 
 ## Cookie for distributed erlang
 -setcookie pasture
@@ -18,4 +18,4 @@
 ## Tweak GC to run more often
 ##-env ERL_FULLSWEEP_AFTER 10
 
--mnesia dir '"/root/pasture/Mnesia"'
+-mnesia dir '"Mnesia"'
