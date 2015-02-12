@@ -107,14 +107,12 @@ handle_json(Req, State) ->
 do_handle_json_path(Req,#?STATE{event_id = undefined} = State,
                     <<"GET">>, <<"/pasture_event">>) ->
     First = mnesia:dirty_first(pasture_event),
-    FirstId = binary_to_list(First),
-    {{true,"event/"++FirstId},Req,State};
+    {First,Req,State};
 do_handle_json_path(Req,#?STATE{event_id = EId} = State,
                     <<"GET">>, <<"/pasture_event/next">>)
         when EId =/= undefined ->
     Next = mnesia:dirty_next(pasture_event,EId),
-    NextId = binary_to_list(Next),
-    {{true,"event/"++NextId},Req,State};
+    {Next,Req,State};
 do_handle_json_path(Req,#?STATE{event_id = EId} = State,
                     <<"GET">>, _) ->
     [Rec] = mnesia:dirty_read(pasture_event, EId),
