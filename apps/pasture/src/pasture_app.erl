@@ -37,12 +37,12 @@ start_deps([{M,F,A}|T]) ->
     try M:F(A) catch _:_ -> ok end,
     start_deps(T);
 start_deps([App|T]) ->
-    lager:info("Starting ... ~p ... \n\n",[App]),
+    lager:info("Starting ... ~p ... \n",[App]),
     case application:start(App) of
         ok ->
             start_deps(T);
         {error,{not_started,DepApp}} ->
-            lager:info("Dependancy ... ~p ... needed \n\n",[DepApp]),
+            lager:info("Dependancy ... ~p ... needed \n",[DepApp]),
             start_deps([DepApp|[App|T]]);
         {error,{already_started,App}} ->
             start_deps(T)

@@ -8,12 +8,13 @@
 
 -export([ init/3,
           rest_init/2,
-          terminate/3 ]).
-
--export([handle_json/2]).
+          terminate/3,
+          resource_exists/2,
+          handle_json/2]).
 
 -define(STATE,pasture_event_state).
--record(?STATE,{ event_id }).
+-record(?STATE,{ event_id,
+                 event }).
 
 %% All available REST handler exports:
  -export([
@@ -57,7 +58,7 @@ create_table(Nodes) ->
                         ?MODULE,
                         [{type,set},
                          {disc_only_copies,Nodes},
-                         {attributes,record_info(fields, ?MODULE)},
+                         {attributes,record_info(fields, pasture_event)},
                          {majority, true}
                        ]);
         C:E ->
@@ -72,12 +73,16 @@ new(Objs) ->
             time       = pasture_utils:try_get_column(Objs,<<"time">>)
         }.
 
-to_json(Rec) ->
-    Fields = record_info(fields, ?MODULE),
-    ListRec = tuple_to_list(Rec),
-    PropList = lists:zip(Fields,ListRec),
-    jsx:encode(PropList).
+to_prop(Rec) ->
+    Fields = record_info(fields, pasture_event),
+    ListRec = tuple_to_list(Rec) -- [?MODULE],
+    lists:zip(Fields,ListRec).
 
+to_json(Rec) ->
+    Prop = to_prop(Rec),
+    jsx:encode(Prop).
+
+%% -----------------------------------
 %% Rest
 
 init(_Transport, _Req, []) ->
@@ -86,6 +91,24 @@ init(_Transport, _Req, []) ->
 rest_init(Req, _Opts) ->
     {EventId,Req1} = cowboy_req:binding(event_id, Req),
     {ok, Req1, #?STATE{ event_id = EventId } }.
+
+resource_exists(Req,#?STATE{ event_id = undefined } = State) ->
+    io:format("EId : ~p\n",[undefined]),
+    {Path,Req1} = cowboy_req:path(Req),
+    case Path of
+        <<"/pasture_event">> ->
+            {true,Req1,State};
+        <<"/pasture_event/">> ->
+            {true,Req1,State};
+        _ ->
+            {false,Req1,State}
+    end;
+resource_exists(Req,#?STATE{ event_id = EId } = State) ->
+    io:format("EId : ~p\n",[EId]),
+    case mnesia:dirty_read(?MODULE,EId) of
+        []    -> {false,Req,State};
+        [Rec] -> {true,Req,State#?STATE{ event = Rec }}
+    end.
 
 content_types_provided(Req, State) ->
     {[  %% {<<"text/html">>,       handle_html},
@@ -105,22 +128,58 @@ handle_json(Req, State) ->
     do_handle_json_path(Req2,State,Method, Path).
 
 do_handle_json_path(Req,#?STATE{event_id = undefined} = State,
-                    <<"GET">>, <<"/pasture_event">>) ->
+                    <<"GET">>, Path)
+                    when Path =:= <<"/pasture_event">>;
+                         Path =:= <<"/pasture_event/">> ->
     First = mnesia:dirty_first(pasture_event),
-    {First,Req,State};
-do_handle_json_path(Req,#?STATE{event_id = EId} = State,
-                    <<"GET">>, <<"/pasture_event/next">>)
-        when EId =/= undefined ->
-    Next = mnesia:dirty_next(pasture_event,EId),
-    {Next,Req,State};
-do_handle_json_path(Req,#?STATE{event_id = EId} = State,
-                    <<"GET">>, _) ->
-    [Rec] = mnesia:dirty_read(pasture_event, EId),
-    Json = to_json(Rec),
-    {Json,Req,State};
-do_handle_json_path(Req,State,<<"POST">>,_) ->
-    SetBodyReq = cowboy_req:set_resp_body(<<"SomeBody!">>, Req),
-    { {true,"path/to/resource"}, SetBodyReq, State}.
+    {json_range(first,First),Req,State};
+%% resource_exists will handle a invalid event_id ( First id )
+do_handle_json_path(Req,#?STATE{event = E, event_id = EId} = State,
+                    <<"GET">>, Path) ->
+    {json_range(page,EId),Req,State}.
+
+json_range(first,First) ->
+    ListFirst = binary_to_list(First),
+    {Next,JsonRecs,_} = loop(next,First),
+    ListNext = binary_to_list(Next),
+    json_struct(ListFirst,ListNext,JsonRecs);
+json_range(_,First) ->
+    ListFirst = binary_to_list(First),
+    {Next,JsonRecs,_} = loop(next,First),
+    ListNext = binary_to_list(Next),
+    %% Find a nicer way of getting Prev....
+    {Prev,JsonRecs,_} = loop(prev,First),
+    ListPrev = binary_to_list(Prev),
+    json_struct(ListPrev,ListNext,JsonRecs).
+
+json_struct(ListPrev,ListNext,JsonRecs) ->
+    jsx:encode([{prev,list_to_binary("/pasture_event/"++ListPrev)},
+                {next,list_to_binary("/pasture_event/"++ListNext)},
+                {pasture_event,lists:reverse(JsonRecs)}
+               ]).
+
+loop(prev,First) ->
+    loop_fun(fun(IdAcc) -> mnesia:dirty_prev(?MODULE,IdAcc) end,First);
+loop(next,First) ->
+    loop_fun(fun(IdAcc) -> mnesia:dirty_next(?MODULE,IdAcc) end,First).
+
+loop_fun(F,First) ->
+    lists:foldl(fun(_,{IdAcc,RecsAcc,false}) ->
+                {IdAcc,RecsAcc,false};
+                       (_,{IdAcc,RecsAcc,true}) ->
+            case mnesia:dirty_read(?MODULE,IdAcc) of
+                [] ->
+                    {IdAcc,
+                     RecsAcc, false};
+                [Rec] ->
+                    {F(IdAcc),
+                     [to_prop(Rec)|RecsAcc], true}
+            end
+        end, {First,[],true}, lists:seq(1,100)).
+
+% do_handle_json_path(Req,State,<<"POST">>,_) ->
+%     SetBodyReq = cowboy_req:set_resp_body(<<"SomeBody!">>, Req),
+%     { {true,"path/to/resource"}, SetBodyReq, State}.
 
 terminate(normal, _Req, _State) ->
     ok;
