@@ -47,7 +47,8 @@ init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     mnesia:wait_for_tables(MnesiaTbls, infinity),
     ok;
 init(_MnesiaTbls,_MasterNode) ->
-    stopped = mnesia:stop().
+    stopped = mnesia:stop(),
+    ok.
 
 json_to_recs([]) ->
     ok;

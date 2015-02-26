@@ -10,22 +10,13 @@
 -include("../include/pasture.hrl").
 
 start(_ArgsList) ->
-    % ok = start_deps([lager, ssl, cowboy, oauth, ibrowse,
-    %                  nodes]),
-    % ExtraNodes = pasture_db:init(),
-    % %%?INFO("ExtraNodes : ~p.....................\n",[ExtraNodes]),
-    % ok = lists:foreach(fun(N) ->
-    %     ok = rpc:call(N, pasture_app, start_deps, [[pasture]])
-    % end, ExtraNodes),
-    % ?INFO(" STARTED \n\n\n ............... "),
-    % %% {ok,_RanchListenerPid} = pasture_web:start(),
     ok.
 
 start(_StartType, _StartArgs) ->
     case pasture_sup:start_link() of
         {ok,SupPid} ->
             ok = pasture_db:init(),
-            %% {ok,_RanchListenerPid} = pasture_web:start(),
+            {ok,_RanchListenerPid} = pasture_web:start(),
             {ok,_} = pasture_db_sup:start_link(),
             {ok,C} = application:get_env(pasture, meetup_chunk_count),
             pasture_sup:start_children(C),
@@ -46,12 +37,12 @@ start_deps([{M,F,A}|T]) ->
     try M:F(A) catch _:_ -> ok end,
     start_deps(T);
 start_deps([App|T]) ->
-    lager:info("Starting ... ~p ... \n\n",[App]),
+    lager:info("Starting ... ~p ... \n",[App]),
     case application:start(App) of
         ok ->
             start_deps(T);
         {error,{not_started,DepApp}} ->
-            lager:info("Dependancy ... ~p ... needed \n\n",[DepApp]),
+            lager:info("Dependancy ... ~p ... needed \n",[DepApp]),
             start_deps([DepApp|[App|T]]);
         {error,{already_started,App}} ->
             start_deps(T)
