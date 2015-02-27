@@ -136,6 +136,8 @@ do_handle_json_path(Req,#?STATE{event = _E, event_id = EId} = State,
                     <<"GET">>, _Path) ->
     {json_range(page,EId),Req,State}.
 
+json_range(_,'$end_of_table') ->
+    <<"{}">>;
 json_range(first,First) ->
     ListFirst = binary_to_list(First),
     {Next,JsonRecs,_} = loop(next,First),
