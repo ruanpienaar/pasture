@@ -16,42 +16,14 @@
     <link rel="icon" href="img/favicon.ico" type="image/x-icon">
     <title>Index</title>
     </head>
-    <body ng-controller="PastureController as ctrlr">
+    <body>
+
         <div class="container">
-            <h2 class="sub-header">Pasture Event</h2>
-
-            <button ng-click="myData.load(myData.prev)">Prev</button>
-            <button ng-click="myData.load(myData.next)">Next</button>
-
-
-            <div class="table-responsive">
-                <table class="table table-striped">
-                  <thead>
-                    <tr>
-                      <th>Id</th>
-                      <th>Name</th>
-                      <th>Url</th>
-                      <th>Time</th>
-                    </tr>
-                  </thead>
-                  <tbody ng-show="true">
-                    <tr ng-repeat="p_ev in myData.pasture_event">
-                      <td>{{p_ev.event_id}}</td>
-                      <td>{{p_ev.event_name}}</td>
-                      <td>{{p_ev.event_url}}</td>
-                      <td>{{p_ev.time}}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-
+            <h2 class="sub-header"><a href="group.html">Group</a></h2>
+            <h2 class="sub-header"><a href="event.html">Event</a></h2>
+            <h2 class="sub-header"><a href="member.html">Member</a></h2>
+            <h2 class="sub-header"><a href="venue.html">Venue</a></h2>
         </div>
 
-        <script type="text/javascript" src="js/jquery-1.11.2.min.js">
-        </script>
-        <script type="text/javascript" src="bootstrap-3.2.0-dist/js/bootstrap.min.js">
-        </script>
-        <script type="text/javascript" src="js/main.js">
-        </script>
     </body>
 </html>

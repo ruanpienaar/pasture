@@ -21,8 +21,18 @@ start() ->
 
     routes() ->
         [
-         {'_', [ {"/pasture_event", pasture_event, []},
+         {'_', [ {"/pasture_member", pasture_member, []},
+                 {"/pasture_member/:member_id", pasture_member, []},
+
+                 {"/pasture_event", pasture_event, []},
                  {"/pasture_event/:event_id", pasture_event, []},
+
+                 {"/pasture_group", pasture_group, []},
+                 {"/pasture_group/:group_id", pasture_group, []},
+
+                 {"/pasture_venue", pasture_venue, []},
+                 {"/pasture_venue/:venue_id", pasture_venue, []},
+
                  {"/", cowboy_static, {priv_file, pasture, "www/index.html"}},
                  {"/[...]", cowboy_static, {priv_dir, pasture, "/www"}}
                ]}

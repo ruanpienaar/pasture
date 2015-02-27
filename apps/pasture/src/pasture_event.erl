@@ -93,7 +93,6 @@ rest_init(Req, _Opts) ->
     {ok, Req1, #?STATE{ event_id = EventId } }.
 
 resource_exists(Req,#?STATE{ event_id = undefined } = State) ->
-    io:format("EId : ~p\n",[undefined]),
     {Path,Req1} = cowboy_req:path(Req),
     case Path of
         <<"/pasture_event">> ->
@@ -104,7 +103,6 @@ resource_exists(Req,#?STATE{ event_id = undefined } = State) ->
             {false,Req1,State}
     end;
 resource_exists(Req,#?STATE{ event_id = EId } = State) ->
-    io:format("EId : ~p\n",[EId]),
     case mnesia:dirty_read(?MODULE,EId) of
         []    -> {false,Req,State};
         [Rec] -> {true,Req,State#?STATE{ event = Rec }}
@@ -134,8 +132,8 @@ do_handle_json_path(Req,#?STATE{event_id = undefined} = State,
     First = mnesia:dirty_first(pasture_event),
     {json_range(first,First),Req,State};
 %% resource_exists will handle a invalid event_id ( First id )
-do_handle_json_path(Req,#?STATE{event = E, event_id = EId} = State,
-                    <<"GET">>, Path) ->
+do_handle_json_path(Req,#?STATE{event = _E, event_id = EId} = State,
+                    <<"GET">>, _Path) ->
     {json_range(page,EId),Req,State}.
 
 json_range(first,First) ->
@@ -144,7 +142,7 @@ json_range(first,First) ->
     ListNext = binary_to_list(Next),
     json_struct(ListFirst,ListNext,JsonRecs);
 json_range(_,First) ->
-    ListFirst = binary_to_list(First),
+    % ListFirst = binary_to_list(First),
     {Next,JsonRecs,_} = loop(next,First),
     ListNext = binary_to_list(Next),
     %% Find a nicer way of getting Prev....

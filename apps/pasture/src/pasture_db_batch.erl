@@ -89,9 +89,9 @@ append_or_commit(StackCount,StackList,Obj,BS) ->
         false ->
             case StackCount+1 of
                 NewStackCount when NewStackCount >= BS ->
-                    ?INFO("Trying to commit ~p...\n",[BS]),
+                    %% ?INFO("Trying to commit ~p...\n",[BS]),
                     commit(StackList),
-                    ?INFO("commited ~p successfully...\n",[BS]),
+                    %%?INFO("commited ~p successfully...\n",[BS]),
                     {0,[]};
                 NewStackCount ->
                     {NewStackCount,[Obj|StackList]}
