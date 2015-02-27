@@ -3,6 +3,8 @@
   var app = angular.module('pastureApp', []);
   app.controller('PastureController', function($scope, $http){
 
+    this.has_values = false;
+
     $scope.myData = {};
 
     var response = $http.get("http://localhost:8001/pasture_event");
@@ -11,6 +13,7 @@
         $scope.myData.prev          = data.prev;
         $scope.myData.next          = data.next;
         $scope.myData.pasture_event = data.pasture_event;
+        has_values = true;
     });
 
     response.error(function(data, status, headers, config) {
@@ -24,6 +27,7 @@
             $scope.myData.prev          = data.prev;
             $scope.myData.next          = data.next;
             $scope.myData.pasture_event = data.pasture_event;
+            has_values = true;
         });
         response.error(function(data, status, headers, config) {
             alert("rest call failed!");

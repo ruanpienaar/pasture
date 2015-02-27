@@ -20,8 +20,10 @@
         <div class="container">
             <h2 class="sub-header">Pasture Event</h2>
 
-            <button ng-click="myData.load(myData.prev)">Prev</button>
-            <button ng-click="myData.load(myData.next)">Next</button>
+            <button ng-show="ctrlr.has_entries"
+                ng-click="myData.load(myData.prev)">Prev</button>
+            <button ng-show="ctrlr.has_entries"
+                ng-click="myData.load(myData.next)">Next</button>
 
 
             <div class="table-responsive">

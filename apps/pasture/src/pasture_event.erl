@@ -93,7 +93,7 @@ rest_init(Req, _Opts) ->
     {ok, Req1, #?STATE{ event_id = EventId } }.
 
 resource_exists(Req,#?STATE{ event_id = undefined } = State) ->
-    io:format("EId : ~p\n",[undefined]),
+    %io:format("EId : ~p\n",[undefined]),
     {Path,Req1} = cowboy_req:path(Req),
     case Path of
         <<"/pasture_event">> ->
@@ -138,6 +138,8 @@ do_handle_json_path(Req,#?STATE{event = E, event_id = EId} = State,
                     <<"GET">>, Path) ->
     {json_range(page,EId),Req,State}.
 
+json_range(_,'$end_of_table') ->
+    <<"{}">>;
 json_range(first,First) ->
     ListFirst = binary_to_list(First),
     {Next,JsonRecs,_} = loop(next,First),

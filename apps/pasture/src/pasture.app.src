@@ -8,9 +8,8 @@
                   lager,
                   ssl,
                   cowboy,
-                  oauth,
+                  erlport,
                   ibrowse,
-                  %%mnesia,
                   nodes
                  ]},
   {mod, { pasture_app, []}},
