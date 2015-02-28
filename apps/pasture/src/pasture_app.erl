@@ -19,7 +19,13 @@ start(_StartType, _StartArgs) ->
             {ok,_RanchListenerPid} = pasture_web:start(),
             {ok,_} = pasture_db_sup:start_link(),
             {ok,C} = application:get_env(pasture, meetup_chunk_count),
+
+            %% Start meetup RSVP children
             pasture_sup:start_children(C),
+
+            %% Start Twitter public stream
+            pasture_twitter_stream:start_link(),
+
             {ok,SupPid};
         E ->
             E
