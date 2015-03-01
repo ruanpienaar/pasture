@@ -21,7 +21,7 @@ start(_StartType, _StartArgs) ->
             {ok,C} = application:get_env(pasture, meetup_chunk_count),
 
             %% Start meetup RSVP children
-            pasture_sup:start_children(C),
+            %% pasture_sup:start_children(C),
 
             %% Start Twitter public stream
             pasture_twitter_stream:start_link(),

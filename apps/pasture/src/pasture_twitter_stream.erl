@@ -1,5 +1,10 @@
 -module (pasture_twitter_stream).
--export([start_link/0]).
+
+%%-include("../include/pasture.hrl").
+
+-export([start_link/0,
+         pop/0,
+         python_call/1]).
 
 -behaviour(gen_server).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
@@ -11,13 +16,33 @@
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, {}, []).
 
-init({}) ->
-    {ok, P} =
-        python:start([{python_path, "/Users/rp/code/pasture"},
-                      {python, "python2"}]),
-    _TREF = erlang:start_timer(2, self(), start),
-    {ok, #state{python_pid = P}}.
+    %         python:call(P, 'tweepy_twitter_stream' ,
+    %                     'start', ["Boris Nemtsov"]),
+    % {ok,Pid}.
 
+python_call(Msg) ->
+    gen_server:call(?MODULE, {python_call, Msg}).
+
+pop() ->
+    gen_server:call(?MODULE, pop).
+
+init({}) ->
+    {ok, P} = python:start([{python_path, "/Users/rp/code/pasture"},
+                            {python, "python2"}]),
+    ok = python:call(P, tweepy_twitter_stream, register_handler, [self()]),
+    %_TREF = erlang:start_timer(2, self(), pop_a_few),
+    {ok, #state{python_pid=P}}.
+
+handle_call(start, _From, #state{ python_pid = P} = State) ->
+    ok = python:cast(P, tweepy_twitter_stream, start, ["Boris Nemtsov"]),
+    {reply, ok, State};
+handle_call({python_call,Msg}, _From,
+            #state{ python_pid = P} = State) ->
+    python:cast(P, Msg),
+    {reply,ok,State};
+handle_call(pop, _From, State) ->
+    %%python:cast(P, test_message),
+    {reply, ok, State};
 handle_call(Request, _From, State) ->
     io:format("Handle_call ~p \n",[Request]),
     {reply, {error, unknown_call}, State}.
@@ -26,8 +51,8 @@ handle_cast(Msg, State) ->
     io:format("Handle_cast ~p \n",[Msg]),
     {noreply, State}.
 
-handle_info({timeout,_,start}, #state{python_pid = P } = State) ->
-    python:call(P, 'tweepy_twitter_stream' ,'start', ["Boris Nemtsov"]),
+handle_info({timeout,_,pop_a_few}, State) ->
+
     {noreply, State};
 handle_info(Info, State) ->
 
