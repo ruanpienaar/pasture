@@ -142,6 +142,8 @@ do_handle_json_path(Req,#?STATE{venue = _E, venue_id = VId} = State,
                     <<"GET">>, _Path) ->
     {json_range(page,VId),Req,State}.
 
+json_range(_,'$end_of_table') ->
+    <<"{}">>;
 json_range(first,First) ->
     ListFirst = integer_to_list(First),
     {Next,JsonRecs,_} = loop(next,First),

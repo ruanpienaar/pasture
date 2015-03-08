@@ -12,7 +12,7 @@
         $scope.p_v_data.pasture_venue = data.pasture_venue;
     });
     p_e_init_resp.error(function(data, status, headers, config) {
-        alert("rest call failed!");
+        //alert("rest call failed!");
     });
 
     // Prev/Next click
@@ -24,7 +24,7 @@
             $scope.p_v_data.pasture_venue = data.pasture_venue;
         });
         response.error(function(data, status, headers, config) {
-            alert("rest call failed!");
+           // alert("rest call failed!");
         });
     }
 

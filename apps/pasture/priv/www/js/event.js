@@ -12,7 +12,7 @@
         $scope.p_e_data.pasture_event = data.pasture_event;
     });
     p_e_init_resp.error(function(data, status, headers, config) {
-        alert("rest call failed!");
+        //alert("rest call failed!");
     });
 
     // Prev/Next click
@@ -24,7 +24,7 @@
             $scope.p_e_data.pasture_event = data.pasture_event;
         });
         response.error(function(data, status, headers, config) {
-            alert("rest call failed!");
+            //alert("rest call failed!");
         });
     }
 

@@ -144,6 +144,8 @@ do_handle_json_path(Req,#?STATE{member = _M, member_id = Mid} = State,
                     <<"GET">>, _Path) ->
     {json_range(page,Mid),Req,State}.
 
+json_range(_,'$end_of_table') ->
+    <<"{}">>;
 json_range(first,First) ->
     ListFirst = integer_to_list(First),
     {Next,JsonRecs,_} = loop(next,First),
