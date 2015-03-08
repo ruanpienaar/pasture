@@ -2,7 +2,9 @@ pasture
 =======
 
 $ clone repo
+
 $ make rel
+
 $ rel/pasture/bin/pasture console
 
 ##View Meetup rsvp's 
