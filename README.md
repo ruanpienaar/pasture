@@ -1,14 +1,17 @@
 pasture
 =======
 
-pasture
-
-clone repo
-
+$ clone repo
 $ make rel
+$ rel/pasture/bin/pasture console
 
-rel/pasture/bin/pasture console
+##View Meetup rsvp's 
+
+http://localhost:8001
+
+##Start a twitter public stream:
 
 pasture_twitter_sup:start_child(Str).
+pasture_twitter has the tweets for Str.
 
-Have a look at the pasture_twitter mnesia table :)
+Twitter treds page underway 
