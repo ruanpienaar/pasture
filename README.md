@@ -13,6 +13,6 @@ http://localhost:8001
 
 pasture_twitter_sup:start_child(Str).
 
-pasture_twitter has the tweets for Str.
+The pasture_twitter Mnesia table has the tweets for Str.
 
 Twitter treds page underway 
