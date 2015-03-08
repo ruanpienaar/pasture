@@ -1,7 +1,8 @@
 -module (pasture_db_batch).
 
 -export([start_link/0,
-         add/1
+         add/1,
+         commit/1
         ]).
 
 -behaviour(gen_server).

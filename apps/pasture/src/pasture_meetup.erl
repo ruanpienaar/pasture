@@ -23,7 +23,6 @@ start_link() ->
     gen_server:start_link(?MODULE, {}, []).
 
 init({}) ->
-
     false = process_flag(trap_exit, true),
     {ibrowse_req_id,ReqId} =
         ibrowse:send_req(
@@ -53,8 +52,7 @@ handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
             {noreply,State}
     end;
 
-handle_info({_,
-                _,{error,connection_closed}},#?STATE{ stack = _ } = State) ->
+handle_info({_,_,{error,connection_closed}},#?STATE{ stack = _ } = _State) ->
 	exit(whereis(?MODULE),restart);
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ stack = Stack } = State) ->
@@ -77,8 +75,9 @@ handle_info({ibrowse_async_response,
                 end;
             error ->
                 exit(whereis(?MODULE),restart);
-	   Else ->
-		exit(whereis(?MODULE),restart)
+            Else ->
+                ?INFO("unexpected parse error : ~p",[Else]),
+                exit(whereis(?MODULE),restart)
         end.
 
 terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->

@@ -1,4 +1,4 @@
--module(pasture_twitter).
+-module (pasture_twitter_search).
 
 -export([create_table/1,
          new/1]).
@@ -15,16 +15,15 @@ create_table(Nodes) ->
                         ?MODULE,
                         [{type,set},
                          {disc_only_copies,Nodes},
-                         {attributes,record_info(fields, pasture_twitter)},
+                         {attributes,record_info(fields, pasture_event)},
                          {majority, true}
                        ]);
         C:E ->
             {error,{C,E}}
     end.
 
-new([Id,FilterStr,Json]) ->
-        #pasture_twitter{
-            id = Id,
-            filter_str = FilterStr,
-            json = Json
+new([SS,CD]) ->
+        #pasture_twitter_search{
+            search_str = SS,
+            created_datetime = CD
         }.

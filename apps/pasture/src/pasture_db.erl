@@ -14,7 +14,8 @@ init() ->
     MnesiaTbls=[pasture_event,
                 pasture_group,
                 pasture_venue,
-                pasture_member],
+                pasture_member,
+                pasture_twitter],
     init(MnesiaTbls,Master).
 
 init(MnesiaTbls,MasterNode) when MasterNode == node() ->

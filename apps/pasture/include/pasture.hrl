@@ -27,9 +27,14 @@
                        venue_name
                       }).
 
-% -record(pasture_ids,{tbl,
-%                      id
-%                     }).
+-record(pasture_twitter,{id,
+                         filter_str,
+                         json
+                        }).
+
+-record(pasture_twitter_search,{search_str,
+                                created_datetime
+                               }).
 
 -define(DEBUG(Msg),
         lager:debug(Msg)).
