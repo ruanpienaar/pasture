@@ -1,3 +1,14 @@
+//TODO : fix these old Ang Mods
+
+// New:
+// angular.module('scopeExample', [])
+// .controller('MyController', ['$scope', function($scope) {
+//   $scope.username = 'World';
+
+//   $scope.sayHello = function() {
+//     $scope.greeting = 'Hello ' + $scope.username + '!';
+//   };
+// }]);
 
 (function(){
   var app = angular.module('pastureApp', []);
