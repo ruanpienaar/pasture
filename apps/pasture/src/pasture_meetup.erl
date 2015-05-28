@@ -53,7 +53,7 @@ handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
     end;
 
 handle_info({_,_,{error,connection_closed}},#?STATE{ stack = _ } = _State) ->
-	exit(whereis(?MODULE),restart);
+	exit(self(),restart);
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ stack = Stack } = State) ->
         %%?INFO("Next\n",[]),
@@ -67,17 +67,17 @@ handle_info({ibrowse_async_response,
             {ok,NewStack} ->
                 case ibrowse:stream_next(NewReqId) of
                     {error,unknown_req_id} ->
-                        exit(whereis(?MODULE),restart);
+                        exit(self(),restart);
                     ok ->
                         {noreply,
                             State#?STATE{ stack = NewStack,
                                           ibrowse_req_id =NewReqId }}
                 end;
             error ->
-                exit(whereis(?MODULE),restart);
+                exit(self(),restart);
             Else ->
                 ?INFO("unexpected parse error : ~p",[Else]),
-                exit(whereis(?MODULE),restart)
+                exit(self(),restart)
         end.
 
 terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->
