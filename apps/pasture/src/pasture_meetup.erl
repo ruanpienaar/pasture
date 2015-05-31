@@ -39,10 +39,8 @@ handle_call(undefined, _From, State) ->
 handle_cast(undefined, State) ->
     {noreply, State}.
 
-handle_info({'EXIT', _From, Reason},#?STATE{ibrowse_req_id = RI} = State) ->
-    ?INFO("pasture_meetup exit ~p\n",[Reason]),
-    ok = ibrowse:stream_close(RI),
-    {noreply,State#?STATE{ibrowse_req_id=undefined}};
+handle_info({'EXIT', _From, Reason},State) ->
+    async_restart(Reason,State);
 handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
     ?INFO("ibrowse_async_headers : ~p\n",[Headers]),
     case ibrowse:stream_next(ReqId) of
@@ -52,33 +50,35 @@ handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
             {noreply,State}
     end;
 
-handle_info({_,_,{error,connection_closed}},#?STATE{ stack = _ } = _State) ->
-	exit(self(),restart);
+handle_info({_,_,{error,connection_closed}},#?STATE{ stack = _ } = State) ->
+    async_restart({error,connection_closed},State);
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ stack = Stack } = State) ->
-        %%?INFO("Next\n",[]),
         %%?INFO("PROCESS STACK LENGTH : ~p\n",[length(Stack)]),
         %% TODO: Build something that resolves massive stacks...For now, i assume that C:E meant the json was
         %%       incomplete :)
-
         %% TODO: how do i exit/or handle the exit better, rather
         %% than a bad match.
         case parse_json(Stack,Data) of
             {ok,NewStack} ->
                 case ibrowse:stream_next(NewReqId) of
                     {error,unknown_req_id} ->
-                        exit(self(),restart);
+                        async_restart({error,unknown_req_id},State);
                     ok ->
                         {noreply,
                             State#?STATE{ stack = NewStack,
                                           ibrowse_req_id =NewReqId }}
                 end;
             error ->
-                exit(self(),restart);
+                async_restart({error,parse_json_error},State);
             Else ->
-                ?INFO("unexpected parse error : ~p",[Else]),
-                exit(self(),restart)
+                async_restart({error,Else},State)
         end.
+
+async_restart(Reason,State) ->
+    ?INFO("Going to restart. Reason:~p \n\n\n",[Reason]),
+    exit(self(),restart),
+    {noreply,State}.
 
 terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->
     ?INFO("pasture_meetup terminate ~p\n",[Reason]),
