@@ -12,5 +12,6 @@ RUN apt-get update \
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY . /app
-CMD ["bash", "cd /app && make && /app/rel/pasture/bin/pasture"]
-# CMD ["bash", "/app/rel/pasture/bin/pasture", "start"]
+CMD ["bash", "cd /app"]
+CMD ["bash", "make"]
+CMD ["bash", "/app/rel/pasture/bin/pasture", "start"]
