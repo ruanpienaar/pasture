@@ -5,10 +5,12 @@ FROM resin/rpi-raspbian:wheezy-2015-02-08
 RUN apt-get -q update && apt-get install -y erlang
 
 RUN apt-get update \
-	&& apt-get install -y erlang && apt-get install -y ssh \
+	&& apt-get install -y erlang \
+	&& apt-get install -y ssh \
+	%% apt-get install -y build-essential \
 	# Remove package lists to free up space 
 	&& rm -rf /var/lib/apt/lists/*
 
 COPY . /app
-# ADD . /app
-# CMD ["bash", /app/rel/pasture/bin/pasture", "start"]
+CMD ["bash", "cd /app && make && /app/rel/pasture/bin/pasture"]
+# CMD ["bash", "/app/rel/pasture/bin/pasture", "start"]
