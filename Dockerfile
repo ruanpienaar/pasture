@@ -4,9 +4,13 @@ FROM resin/rpi-raspbian:wheezy-2015-02-08
 
 RUN apt-get -q update && apt-get install -y erlang
 
-# COPY . /app
-# CMD ["make"]
-# CMD ["rel/pasture/bin/pasture", "start"]
+RUN apt-get update \
+	&& apt-get install -y erlang && apt-get install openssh \
+	# Remove package lists to free up space 
+	&& rm -rf /var/lib/apt/lists/*
 
-ADD . /App/
-CMD ["/App/rel/pasture/bin/pasture", "start"]
+ADD . /App
+CMD ["bash", "ls", "-l"]
+CMD [ls", "-l"]
+CMD [ls -l"]
+CMD ["bash", /App/rel/pasture/bin/pasture", "start"]
