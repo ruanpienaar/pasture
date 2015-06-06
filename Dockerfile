@@ -9,8 +9,6 @@ RUN apt-get update \
 	# Remove package lists to free up space 
 	&& rm -rf /var/lib/apt/lists/*
 
-ADD . /App
-CMD ["bash", "ls", "-l"]
-CMD [ls", "-l"]
-CMD [ls -l"]
-CMD ["bash", /App/rel/pasture/bin/pasture", "start"]
+COPY . /app
+# ADD . /app
+# CMD ["bash", /app/rel/pasture/bin/pasture", "start"]
