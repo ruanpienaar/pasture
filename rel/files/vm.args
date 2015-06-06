@@ -12,6 +12,9 @@
 +K true
 +A 128
 
+## Don't kill the service, when some nitwit uses Ctrl-C when attached.
++Bi
+
 ## Increase number of concurrent ports/sockets
 ##-env ERL_MAX_PORTS 4096
 
