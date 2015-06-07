@@ -22,20 +22,7 @@ ENV 		HOME /root
 # Install Basic Packages
 
 RUN 		apt-get install -y build-essential software-properties-common
-RUN 		apt-get install -y wget curl git man unzip screen
-
-
-# Install Erlang
-WORKDIR 	/tmp
-
-RUN 		wget http://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb
-RUN 		dpkg -i erlang-solutions_1.0_all.deb 
-RUN 		apt-get update 
-RUN 		apt-get install -y erlang incron
-RUN 		apt-get clean
-RUN 		rm -rf /tmp/*
-RUN 		mkdir /code
- 
+RUN 		apt-get install -y wget curl git man unzip screen erlang
 
 # Install Erlang Application
 
@@ -46,7 +33,7 @@ RUN 		make rel
 # setup ssh keys
 
 EXPOSE 		8001 21
-CMD 		["/code/app/pasture/rel/pasture/bin/pasture", ""]
+CMD 		["/code/app/pasture/rel/pasture/bin/pasture", "start"]
 
 
 
