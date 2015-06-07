@@ -26,8 +26,10 @@ RUN 		apt-get install -y wget curl git man unzip screen erlang git
 
 # Install Erlang Application
 
+ADD			. /app
+
 RUN 		git clone https://github.com/ruanpienaar/pasture
-WORKDIR 	/pasture
+WORKDIR 	/app/pasture
 RUN 		make rel
 
 # setup ssh keys
