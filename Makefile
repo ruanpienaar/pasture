@@ -10,32 +10,32 @@ SCRIPT_PATH  := $(REL_DIR)/$(NODE)/bin/$(REL)
 .PHONY: rel offline compile get-deps update-deps test clean deep-clean
 
 rel: compile
-	@rebar generate -f
+	./rebar generate -f
 
 offline:
-	@rebar compile
-	@rebar generate
+	./rebar compile
+	./rebar generate
 
 compile: get-deps update-deps
-	@rebar compile
+	./rebar compile
 
 beams:
-	@rebar compile
+	./rebar compile
 
 get-deps:
-	@rebar get-deps
+	./rebar get-deps
 
 update-deps:
-	@rebar update-deps
+	./rebar update-deps
 
 test: offline
-	@rebar skip_deps=true apps="loom" eunit
+	./rebar skip_deps=true apps="loom" eunit
 
 clean:
-	@rebar clean
+	./rebar clean
 
 deep-clean: clean
-	@rebar delete-deps
+	./rebar delete-deps
 
 setup_dialyzer:
 	dialyzer --build_plt --apps erts kernel stdlib mnesia compiler syntax_tools runtime_tools crypto tools inets ssl webtool public_key observer
@@ -51,10 +51,10 @@ doc:
 	done;
 
 analyze: checkplt
-	@rebar skip_deps=true dialyze
+	./rebar skip_deps=true dialyze
 
 buildplt:
-	@rebar skip_deps=true build-plt
+	./rebar skip_deps=true build-plt
 
 checkplt: buildplt
-	@rebar skip_deps=true check-plt
+	./rebar skip_deps=true check-plt
