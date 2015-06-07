@@ -22,7 +22,7 @@ RUN 		apt-get -y upgrade
 # Install Basic Packages
 
 RUN 		apt-get install -y build-essential software-properties-common
-RUN 		apt-get install -y wget curl git man unzip screen erlang
+RUN 		apt-get install -y wget curl git man unzip screen erlang git
 
 # Install Erlang Application
 
