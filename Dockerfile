@@ -10,14 +10,14 @@ RUN 		apt-get -y upgrade
 ENV 		HOME /root
 # Set Language Environment
 
-RUN 		apt-get install -y language-pack-en
+#RUN 		apt-get install -y language-pack-en
 
-ENV 		LANGUAGE en_US.UTF-8
-ENV 		LANG en_US.UTF-8
-ENV 		LC_ALL en_US.UTF-8
-RUN 		locale-gen en_US.UTF-8
-RUN 		dpkg-reconfigure locales
-ENV 		DEBIAN_FRONTEND noninteractive
+#ENV 		LANGUAGE en_US.UTF-8
+#ENV 		LANG en_US.UTF-8
+#ENV 		LC_ALL en_US.UTF-8
+#RUN 		locale-gen en_US.UTF-8
+#RUN 		dpkg-reconfigure locales
+#ENV 		DEBIAN_FRONTEND noninteractive
 
 # Install Basic Packages
 
