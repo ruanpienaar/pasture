@@ -7,7 +7,7 @@ RUN 		apt-get -y upgrade
 
 # Set Environment Variables
 
-ENV 		HOME /root
+#ENV 		HOME /root
 # Set Language Environment
 
 #RUN 		apt-get install -y language-pack-en
@@ -26,8 +26,8 @@ RUN 		apt-get install -y wget curl git man unzip screen erlang
 
 # Install Erlang Application
 
-RUN 		git clone https://github.com/ruanpienaar/pasture /code/app/
-WORKDIR 	/code/app
+RUN 		git clone https://github.com/ruanpienaar/pasture
+WORKDIR 	/pasture
 RUN 		make rel
 
 # setup ssh keys
