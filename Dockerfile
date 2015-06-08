@@ -28,9 +28,9 @@ RUN 		apt-get install -y wget curl git man unzip screen erlang git
 
 ADD			. /app
 
-RUN 		git clone https://github.com/ruanpienaar/pasture
+CMD 		["git", "clone", "https://github.com/ruanpienaar/pasture"]
 WORKDIR 	/app/pasture
-RUN 		make rel
+CMD 		["make", "rel"]
 
 # setup ssh keys
 
