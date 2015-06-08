@@ -5,20 +5,6 @@ FROM resin/rpi-raspbian:wheezy-2015-06-03
 RUN 		apt-get update
 RUN 		apt-get -y upgrade
 
-# Set Environment Variables
-
-#ENV 		HOME /root
-# Set Language Environment
-
-#RUN 		apt-get install -y language-pack-en
-
-#ENV 		LANGUAGE en_US.UTF-8
-#ENV 		LANG en_US.UTF-8
-#ENV 		LC_ALL en_US.UTF-8
-#RUN 		locale-gen en_US.UTF-8
-#RUN 		dpkg-reconfigure locales
-#ENV 		DEBIAN_FRONTEND noninteractive
-
 # Install Basic Packages
 
 RUN 		apt-get install -y build-essential software-properties-common
@@ -28,6 +14,7 @@ RUN 		apt-get install -y wget curl git man unzip screen erlang git
 
 ADD			. /app
 
+WORKDIR 	/app/
 CMD 		["git", "clone", "https://github.com/ruanpienaar/pasture"]
 WORKDIR 	/app/pasture
 CMD 		["make", "rel"]
@@ -36,19 +23,6 @@ CMD 		["make", "rel"]
 
 EXPOSE 		8001 21
 CMD 		["/code/app/pasture/rel/pasture/bin/pasture", "start"]
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # http://docs.resin.io/#/pages/dockerfile.md
 
@@ -68,5 +42,3 @@ CMD 		["/code/app/pasture/rel/pasture/bin/pasture", "start"]
 #WORKDIR /app
 #CMD ["bash", "make"]
 #CMD ["bash", "/app/rel/pasture/bin/pasture", "start"]
-
-
