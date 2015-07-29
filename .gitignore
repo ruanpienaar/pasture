@@ -12,3 +12,4 @@ erl_crash.dump
 /rel/pasture
 log
 .rebar/erlcinfo
+rel/files/sys.config
