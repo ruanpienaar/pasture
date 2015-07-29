@@ -9,7 +9,7 @@
 init() ->
     mnesia:set_debug_level(verbose),
     ?INFO("Db init...\n"),
-    {ok,Master} = application:get_env(nodes, master_db_node),
+    {ok,Master} = application:get_env(pasture, master_db_node),
     ?INFO("Master node : ~p\n",[Master]),
     MnesiaTbls=[pasture_event,
                 pasture_group,
@@ -19,7 +19,7 @@ init() ->
     init(MnesiaTbls,Master).
 
 init(MnesiaTbls,MasterNode) when MasterNode == node() ->
-    {ok,Nodes} = application:get_env(nodes, db_nodes),
+    {ok,Nodes} = application:get_env(pasture, db_nodes),
     [ExtraNodes] = [ Nodes -- [node()] ],
     ?INFO("Extra nodes : ~p\n\n",[ExtraNodes]),
     mnesia:change_config(extra_db_nodes, ExtraNodes),
