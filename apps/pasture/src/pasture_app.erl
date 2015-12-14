@@ -13,7 +13,7 @@ start(_ArgsList) ->
     ok.
 
 start(_StartType, _StartArgs) ->
-    observer:start(),
+    %%observer:start(),
     case pasture_sup:start_link() of
         {ok,SupPid} ->
             ok = pasture_db:init(),

@@ -10,7 +10,8 @@ SCRIPT_PATH  := $(REL_DIR)/$(NODE)/bin/$(REL)
 .PHONY: rel offline compile get-deps update-deps test clean deep-clean
 
 rel: compile
-	./rebar generate -f
+	@. ./set-env.sh
+	@rebar generate -f
 
 offline:
 	./rebar compile
@@ -29,7 +30,7 @@ update-deps:
 	./rebar update-deps
 
 test: offline
-	./rebar skip_deps=true apps="loom" eunit
+	@rebar skip_deps=true apps="pasture" eunit
 
 clean:
 	./rebar clean

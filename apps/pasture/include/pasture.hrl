@@ -36,6 +36,13 @@
                                 created_datetime
                                }).
 
+-record(pasture_twitter_user,{id
+                              }).
+-record(pasture_twitter_location,{location, 
+                                  count
+                                  }).
+-record(pasture_twitter_tweet_string,{string}).
+
 -define(DEBUG(Msg),
         lager:debug(Msg)).
 -define(DEBUG(Msg, Args),
