@@ -1,14 +1,16 @@
 -module(pasture_web).
 -export([start/0,
-         stop/1,
+         stop/0,
          twitter/0
     ]).
+    
+-define(COWBOY_REF, http).
 
 start() ->
     {ok,Port} = port(),
     Routes    = routes(),
     Dispatch  = cowboy_router:compile(Routes),
-    {ok, Pid} = cowboy:start_http(http,
+    {ok, Pid} = cowboy:start_http(?COWBOY_REF,
                                 _ConnectionPoolSize=10,
                                 [{port, Port}],
                                 [{env, [{dispatch, Dispatch}]},
@@ -44,8 +46,8 @@ start() ->
             Other -> {ok,list_to_integer(Other)}
         end.
 
-stop(Pid) ->
-    cowboy:stop_listener(Pid).
+stop() ->
+    cowboy:stop_listener(?COWBOY_REF).
 
 twitter() ->
     _URL = "https://stream.twitter.com/1.1/statuses/filter.json".

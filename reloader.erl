@@ -45,7 +45,7 @@ init([]) ->
 
 %% @spec handle_call(Args, From, State) -> tuple()
 %% @doc gen_server callback.
-handle_call(stop, _From, State) ->
+handle_call(stop, a _From, State) ->
     {stop, shutdown, stopped, State};
 handle_call(_Req, _From, State) ->
     {reply, {error, badrequest}, State}.

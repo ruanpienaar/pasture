@@ -34,8 +34,7 @@ start(_StartType, _StartArgs) ->
     end.
 
 stop(_State) ->
-    ok = pasture_web:stop(whereis(pasture_ranch_listener)),
-    ok.
+    ok = pasture_web:stop().
 
 start_deps([]) ->
     ok;
