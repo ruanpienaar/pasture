@@ -2,6 +2,7 @@
 
 -export([start_link/0,
          add/1,
+         new_batch_size/1,
          commit/1
         ]).
 
@@ -28,6 +29,10 @@
 
 add({Type,Obj}) ->
     gen_server:call(?MODULE,{Type,Obj},infinity).
+
+new_batch_size(Size) when is_integer(Size) andalso Size > 0 ->
+    application:set_env(pasture, batch_size, Size),
+    gen_server:cast(?MODULE, {new_batch_size, Size}).
 
 start_link() ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, {}, []).
@@ -60,6 +65,8 @@ init({}) ->
      {NewStackCount,NewStackList} = append_or_commit(StackCount,StackList,Obj,                                              BS),
      {reply,ok,State#?STATE{ pasture_venue = {NewStackCount,NewStackList}}}.
 
+handle_cast({new_batch_size, Size}, State) ->
+    {noreply, State#?STATE{bs=Size}};
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
