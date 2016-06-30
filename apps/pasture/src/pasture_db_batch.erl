@@ -3,8 +3,9 @@
 -export([start_link/0,
          add/1,
          new_batch_size/1,
-         commit/1
-        ]).
+         commit/1,
+         mnesia_async_dirty/1
+]).
 
 -behaviour(gen_server).
 
@@ -19,7 +20,8 @@
                  pasture_event  = {0,[]},
                  pasture_group  = {0,[]},
                  pasture_member = {0,[]},
-                 pasture_venue  = {0,[]}
+                 pasture_venue  = {0,[]},
+                 pasture_twitter = {0,[]}
 }).
 
 % ---
@@ -49,21 +51,34 @@ init({}) ->
         ) ->
      {NewStackCount,NewStackList} = append_or_commit(StackCount,StackList,Obj,                                              BS),
      {reply,ok,State#?STATE{ pasture_event = {NewStackCount,NewStackList}}};
+
  handle_call({pasture_group,Obj},_From,
             #?STATE{ pasture_group = {StackCount,StackList} , bs = BS} = State
         ) ->
      {NewStackCount,NewStackList} = append_or_commit(StackCount,StackList,Obj,                                              BS),
      {reply,ok,State#?STATE{ pasture_group = {NewStackCount,NewStackList}}};
+
  handle_call({pasture_member,Obj},_From,
             #?STATE{ pasture_member = {StackCount,StackList}, bs = BS }= State
         ) ->
      {NewStackCount,NewStackList} = append_or_commit(StackCount,StackList,Obj,                                              BS),
      {reply,ok,State#?STATE{ pasture_member = {NewStackCount,NewStackList}}};
+
  handle_call({pasture_venue,Obj},_From,
             #?STATE{ pasture_venue = {StackCount,StackList} , bs = BS} = State
         ) ->
      {NewStackCount,NewStackList} = append_or_commit(StackCount,StackList,Obj,                                              BS),
-     {reply,ok,State#?STATE{ pasture_venue = {NewStackCount,NewStackList}}}.
+     {reply,ok,State#?STATE{ pasture_venue = {NewStackCount,NewStackList}}};
+
+handle_call({pasture_twitter,Obj},_From,
+            #?STATE{ pasture_twitter = {StackCount,StackList} , bs = BS} = State
+        ) ->
+     {NewStackCount,NewStackList} = maybe_commit(StackCount,StackList,Obj,                                              BS),
+     {reply,ok,State#?STATE{ pasture_twitter = {NewStackCount,NewStackList}}};
+
+handle_call({pasture_twitter_location,Obj},_From, State) ->
+     pasture_twitter_location:inc([Obj#pasture_twitter_location.location]),
+     {reply,ok,State}.
 
 handle_cast({new_batch_size, Size}, State) ->
     {noreply, State#?STATE{bs=Size}};
@@ -95,21 +110,22 @@ append_or_commit(StackCount,StackList,Obj,BS) ->
         true ->
             {StackCount,StackList};
         false ->
-            case StackCount+1 of
-                NewStackCount when NewStackCount >= BS ->
-                    %% ?INFO("Trying to commit ~p...\n",[BS]),
-                    commit(StackList),
-                    %%?INFO("commited ~p successfully...\n",[BS]),
-                    {0,[]};
-                NewStackCount ->
-                    {NewStackCount,[Obj|StackList]}
-            end
+            maybe_commit(StackCount,StackList,Obj,BS)
         end.
 
+maybe_commit(StackCount,StackList,Obj,BS) ->
+    case StackCount+1 of
+        NewStackCount when NewStackCount >= BS ->
+            %% ?INFO("Trying to commit ~p...\n",[BS]),
+            commit(StackList),
+            %%?INFO("commited ~p successfully...\n",[BS]),
+            {0,[]};
+        NewStackCount ->
+            {NewStackCount,[Obj|StackList]}
+    end.
+
 commit(StackList) ->
-    lists:foreach(
-        fun(Rec) ->
-            ok = mnesia:async_dirty(fun() ->
-                mnesia:dirty_write(Rec)
-            end)
-        end, StackList).
+    lists:foreach(fun mnesia_async_dirty/1, StackList).
+
+mnesia_async_dirty(Rec) ->
+    ok = mnesia:async_dirty(fun() -> mnesia:dirty_write(Rec) end).

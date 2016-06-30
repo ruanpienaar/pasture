@@ -21,7 +21,7 @@ CMD 		["make", "rel"]
 
 # setup ssh keys
 
-EXPOSE 		8001 21
+# EXPOSE 		8001 21
 CMD 		["/code/app/pasture/rel/pasture/bin/pasture", "start"]
 
 # http://docs.resin.io/#/pages/dockerfile.md

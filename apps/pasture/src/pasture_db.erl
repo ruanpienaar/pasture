@@ -15,7 +15,8 @@ init() ->
                 pasture_group,
                 pasture_venue,
                 pasture_member,
-                pasture_twitter],
+                pasture_twitter,
+                pasture_twitter_location],
     init(MnesiaTbls,Master).
 
 init(MnesiaTbls,MasterNode) when MasterNode == node() ->

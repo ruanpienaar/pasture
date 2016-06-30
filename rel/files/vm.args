@@ -21,4 +21,7 @@
 ## Tweak GC to run more often
 ##-env ERL_FULLSWEEP_AFTER 10
 
+-env ERL_LIBS erlport-0.9.8
+
 -mnesia dir '"Mnesia"'
+

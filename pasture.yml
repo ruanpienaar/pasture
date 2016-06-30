@@ -1,0 +1,29 @@
+- hosts: all
+  vars:
+    home: '/root'
+
+  #user: root
+  remote_user: root
+  sudo: no
+
+  tasks:
+  
+  - name: Prep APT & install packages
+    apt: update_cache=yes
+    apt: pkg=make
+    apt: pkg=git
+    notify:
+      - Packages installed
+
+  - name: Erlang
+    shell: 'wget -c http://www.erlang.org/download/otp_src_17.5.tar.gz'
+    shell: tar zxvf otp_src_17.5.tar.gz
+    shell: 'cd otp_src_17.5'
+    with_items:
+      - ./configure
+      - make
+
+  - name: Build rebar
+    shell: 'cd {{ home }};{{ item }}'
+    with_items:
+      - cd rebar && make

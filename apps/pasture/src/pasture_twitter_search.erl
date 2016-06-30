@@ -14,7 +14,7 @@ create_table(Nodes) ->
                 mnesia:create_table(
                         ?MODULE,
                         [{type,set},
-                         {disc_only_copies,Nodes},
+                         {ram_copies_only,Nodes},
                          {attributes,record_info(fields, pasture_event)},
                          {majority, true}
                        ]);
@@ -22,8 +22,7 @@ create_table(Nodes) ->
             {error,{C,E}}
     end.
 
-new([SS,CD]) ->
+new([SS]) ->
         #pasture_twitter_search{
-            search_str = SS,
-            created_datetime = CD
+            search_str = SS
         }.

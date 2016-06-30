@@ -29,11 +29,11 @@ start_link() ->
 init([]) ->
     C = pasture_meetup,
     RestartStrategy = simple_one_for_one,
-    MaxRestarts = 1000,
-    MaxSecondsBetweenRestarts = 3600,
+    MaxRestarts = 10000,
+    MaxSecondsBetweenRestarts = 9600,
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
     {ok, {SupFlags,
-          [{pasture_meetup_id,{C, start_link, []},temporary, 1000, worker, [C]}
+          [{pasture_meetup_id,{C, start_link, []}, permanent, 100, worker, [C]}
           ]}
     }.
 

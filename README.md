@@ -15,10 +15,18 @@ http://localhost:8001
 
 You'd need to install these first:
 
-$ pip install tweepy
+get a (Binary package)[http://erlport.org/downloads/#id4] for your erlang
+version.
 
-$ pip install erlport
+uncompress, and place the erlport DIR in your code:lib_dir/0.
 
+make python_modules
+
+make rel
+
+edit tweepy_twitter_stream with your Twitter App OAUTH keys
+
+start | console
 
 pasture_twitter_sup:start_child(Str).
 

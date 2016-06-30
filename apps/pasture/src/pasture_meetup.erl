@@ -23,7 +23,6 @@ start_link() ->
     gen_server:start_link(?MODULE, {}, []).
 
 init({}) ->
-    false = process_flag(trap_exit, true),
     {ibrowse_req_id,ReqId} =
         ibrowse:send_req(
             "http://stream.meetup.com/2/rsvps",[],get,[],
@@ -49,20 +48,15 @@ handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
         ok ->
             {noreply,State}
     end;
-
-handle_info({_,_,{error,connection_closed}},#?STATE{ stack = _ } = State) ->
-    async_restart({error,connection_closed},State);
+handle_info({ibrowse_async_response,
+                _,{error,connection_closed}}, State) ->
+    async_restart({error,connection_closed}, State);
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ stack = Stack } = State) ->
-        %%?INFO("PROCESS STACK LENGTH : ~p\n",[length(Stack)]),
-        %% TODO: Build something that resolves massive stacks...For now, i assume that C:E meant the json was
-        %%       incomplete :)
-        %% TODO: how do i exit/or handle the exit better, rather
-        %% than a bad match.
         case parse_json(Stack,Data) of
             {ok,NewStack} ->
                 case ibrowse:stream_next(NewReqId) of
-                    {error,unknown_req_id} ->
+                    {error, unknown_req_id} ->
                         async_restart({error,unknown_req_id},State);
                     ok ->
                         {noreply,
@@ -73,7 +67,10 @@ handle_info({ibrowse_async_response,
                 async_restart({error,parse_json_error},State);
             Else ->
                 async_restart({error,Else},State)
-        end.
+        end;
+handle_info(Msg, State) ->
+    io:format("~p\n", [Msg]),
+    {noreply, State}.
 
 async_restart(Reason,State) ->
     ?INFO("Going to restart. Reason:~p \n\n\n",[Reason]),

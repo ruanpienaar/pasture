@@ -11,5 +11,6 @@ erl_crash.dump
 *.app
 /rel/pasture
 log
+apps/pasture/.rebar/
 .rebar/erlcinfo
 rel/files/sys.config

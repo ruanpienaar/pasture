@@ -13,7 +13,6 @@ start(_ArgsList) ->
     ok.
 
 start(_StartType, _StartArgs) ->
-    %%observer:start(),
     case pasture_sup:start_link() of
         {ok,SupPid} ->
             ok = pasture_db:init(),
@@ -22,7 +21,7 @@ start(_StartType, _StartArgs) ->
             {ok,_} = pasture_db_sup:start_link(),
             %%{ok,C} = application:get_env(pasture, meetup_chunk_count),
             %% Start meetup RSVP children
-            %%pasture_sup:start_children(C),
+            %% pasture_sup:start_children(C),
             case pasture_twitter_sup:start_link() of
                 {ok,_} ->
                     {ok,SupPid};

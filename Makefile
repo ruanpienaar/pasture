@@ -20,6 +20,10 @@ offline:
 compile: get-deps update-deps
 	./rebar compile
 
+python_modules: get-deps
+	@sudo pip install tweepy
+	@sudo pip install erlport
+
 beams:
 	./rebar compile
 
@@ -30,7 +34,7 @@ update-deps:
 	./rebar update-deps
 
 test: offline
-	@rebar skip_deps=true apps="pasture" eunit
+	./rebar skip_deps=true apps="pasture" eunit
 
 clean:
 	./rebar clean

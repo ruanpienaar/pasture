@@ -33,12 +33,12 @@
                         }).
 
 -record(pasture_twitter_search,{search_str,
-                                created_datetime
+                                count
                                }).
 
 -record(pasture_twitter_user,{id
                               }).
--record(pasture_twitter_location,{location, 
+-record(pasture_twitter_location,{location,
                                   count
                                   }).
 -record(pasture_twitter_tweet_string,{string}).
