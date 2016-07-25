@@ -26,7 +26,7 @@ init({}) ->
     {ibrowse_req_id,ReqId} =
         ibrowse:send_req(
             "http://stream.meetup.com/2/rsvps",[],get,[],
-            [ {stream_chunk_size,1024 * 2},
+            [ {stream_chunk_size,16384},
               {stream_to,{self(), once}}
             ],
             infinity),
@@ -66,10 +66,14 @@ handle_info({ibrowse_async_response,
             error ->
                 async_restart({error,parse_json_error},State);
             Else ->
-                async_restart({error,Else},State)
+                async_restart({parse_json_error,Else},State)
         end;
+handle_info({ibrowse_async_response_end,ReqId}, State) ->
+    ibrowse:stream_close(ReqId),
+    async_restart(ibrowse_async_response_end,State),
+    {noreply, State};
 handle_info(Msg, State) ->
-    io:format("~p\n", [Msg]),
+    ?CRITICAL("unhandled info ~p\n", [Msg]),
     {noreply, State}.
 
 async_restart(Reason,State) ->
