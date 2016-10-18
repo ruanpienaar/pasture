@@ -38,7 +38,7 @@ init([]) ->
     }.
 
 start_child(Str) ->
-    case children() of 
+    case children() of
         Children when length(Children) >= 2 ->
             {_,Pid,worker,[pasture_twitter_stream]} = lists:last(Children),
             ok = pasture_twitter_stream:stop(Pid),

@@ -1,5 +1,5 @@
 ## Name of the node
--name p1@127.0.0.1
+-sname p1
 
 ## Cookie for distributed erlang
 -setcookie pasture

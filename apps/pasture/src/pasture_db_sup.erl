@@ -16,7 +16,12 @@ init({}) ->
             {pasture_db_batch, start_link, []},
             permanent, 5000, worker,
             [pasture_db_batch]},
+    Child2 =
+        {pasture_db_esqlite,
+            {pasture_db_esqlite, start_link, []},
+            permanent, 5000, worker,
+            [pasture_db_esqlite]},
 
-    Children = [Child1],
+    Children = [Child1, Child2],
     RestartStrategy = {one_for_one, 5, 10},
     {ok, {RestartStrategy, Children}}.

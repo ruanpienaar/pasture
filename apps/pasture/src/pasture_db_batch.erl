@@ -1,19 +1,19 @@
 -module (pasture_db_batch).
 
--export([start_link/0,
-         add/1,
-         new_batch_size/1,
-         commit/1,
-         mnesia_async_dirty/1
-]).
+%% TODO: rename to mnesia module....
 
 -behaviour(gen_server).
+-behaviour(pasture_db_mod).
 
+-export([start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
--include("../include/pasture.hrl").
+-export([add/1,
+         new_batch_size/1,
+         commit/1
+]).
 
--define(SERVER, ?MODULE).
+-include("../include/pasture.hrl").
 
 -define(STATE, pasture_db_batch_state).
 -record(?STATE,{ bs,
@@ -30,6 +30,7 @@
 %% and when mnesia aborts, because the majotiry flag is set to true.
 
 add({Type,Obj}) ->
+    io:format("M", []),
     gen_server:call(?MODULE,{Type,Obj},infinity).
 
 new_batch_size(Size) when is_integer(Size) andalso Size > 0 ->
@@ -37,7 +38,7 @@ new_batch_size(Size) when is_integer(Size) andalso Size > 0 ->
     gen_server:cast(?MODULE, {new_batch_size, Size}).
 
 start_link() ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, {}, []).
+    gen_server:start_link({local, ?MODULE}, ?MODULE, {}, []).
 
 %% ----
 
@@ -125,7 +126,6 @@ maybe_commit(StackCount,StackList,Obj,BS) ->
     end.
 
 commit(StackList) ->
-    lists:foreach(fun mnesia_async_dirty/1, StackList).
-
-mnesia_async_dirty(Rec) ->
-    ok = mnesia:async_dirty(fun() -> mnesia:dirty_write(Rec) end).
+    lists:foreach(fun(Rec) ->
+        mnesia:async_dirty(fun() -> mnesia:dirty_write(Rec) end)
+    end, StackList).

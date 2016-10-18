@@ -22,9 +22,9 @@
                        }).
 
 -record(pasture_venue,{venue_id,
+                       venue_name,
                        lat,
-                       lon,
-                       venue_name
+                       lon
                       }).
 
 -record(pasture_twitter,{id,

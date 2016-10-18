@@ -40,5 +40,7 @@ init([]) ->
 start_child() ->
     supervisor:start_child(?MODULE, []).
 
+%% Meetup only really has unique content on 1 conenction.....
+%% TODO: only allow one...
 start_children(X) ->
     [ start_child() || _N <- lists:seq(1,X) ].

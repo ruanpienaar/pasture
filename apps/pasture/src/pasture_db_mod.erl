@@ -1,0 +1,4 @@
+-module(pasture_db_mod).
+-callback add(Obj :: tuple()) -> ok.
+-callback new_batch_size(Size :: non_neg_integer()) -> ok.
+-callback commit(ObjList ::list() | tuple()) -> ok.

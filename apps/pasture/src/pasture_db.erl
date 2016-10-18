@@ -1,7 +1,7 @@
 -module(pasture_db).
 
 -export([init/0,
-         json_to_recs/1
+         json_to_recs/2
          ]).
 
 -include("../include/pasture.hrl").
@@ -52,23 +52,23 @@ init(_MnesiaTbls,_MasterNode) ->
     stopped = mnesia:stop(),
     ok.
 
-json_to_recs([]) ->
+json_to_recs(_Mod, []) ->
     ok;
-json_to_recs([{<<"event">>,Objs}|T]) ->
+json_to_recs(Mod, [{<<"event">>,Objs}|T]) ->
     Rec = pasture_event:new(Objs),
-    ok = pasture_db_batch:add({pasture_event,Rec}),
-    json_to_recs(T);
-json_to_recs([{<<"group">>,Objs}|T]) ->
+    ok = Mod:add({pasture_event,Rec}),
+    json_to_recs(Mod, T);
+json_to_recs(Mod, [{<<"group">>,Objs}|T]) ->
     Rec = pasture_group:new(Objs),
-    ok = pasture_db_batch:add({pasture_group,Rec}),
-    json_to_recs(T);
-json_to_recs([{<<"member">>,Objs}|T]) ->
+    ok = Mod:add({pasture_group,Rec}),
+    json_to_recs(Mod, T);
+json_to_recs(Mod, [{<<"member">>,Objs}|T]) ->
     Rec = pasture_member:new(Objs),
-    ok = pasture_db_batch:add({pasture_member,Rec}),
-    json_to_recs(T);
-json_to_recs([{<<"venue">>,Objs}|T]) ->
+    ok = Mod:add({pasture_member,Rec}),
+    json_to_recs(Mod, T);
+json_to_recs(Mod, [{<<"venue">>,Objs}|T]) ->
     Rec = pasture_venue:new(Objs),
-    ok = pasture_db_batch:add({pasture_venue,Rec}),
-    json_to_recs(T);
-json_to_recs([_H|T]) ->
-    json_to_recs(T).
+    ok = Mod:add({pasture_venue,Rec}),
+    json_to_recs(Mod, T);
+json_to_recs(Mod, [_H|T]) ->
+    json_to_recs(Mod, T).

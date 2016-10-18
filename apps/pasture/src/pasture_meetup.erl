@@ -13,7 +13,8 @@
 
 -record(?STATE,{
     ibrowse_req_id,
-    stack=[]
+    stack=[],
+    db_mod
 }).
 
 %% TODO: the supervisor didn't restart the process when it failed...
@@ -26,11 +27,14 @@ init({}) ->
     {ibrowse_req_id,ReqId} =
         ibrowse:send_req(
             "http://stream.meetup.com/2/rsvps",[],get,[],
-            [ {stream_chunk_size,16384},
-              {stream_to,{self(), once}}
+            [
+                {stream_chunk_size,16384},
+                {stream_to,{self(), once}}
             ],
             infinity),
-    {ok,#?STATE{ibrowse_req_id=ReqId}}.
+    Mod = application:get_env(pasture, db_mod, pasture_db_batch),
+    {ok,#?STATE{ibrowse_req_id=ReqId,
+                db_mod=Mod}}.
 
 handle_call(undefined, _From, State) ->
     {reply, ok, State}.
@@ -52,8 +56,9 @@ handle_info({ibrowse_async_response,
                 _,{error,connection_closed}}, State) ->
     async_restart({error,connection_closed}, State);
 handle_info({ibrowse_async_response,
-                NewReqId,Data},#?STATE{ stack = Stack } = State) ->
-        case parse_json(Stack,Data) of
+                NewReqId,Data},#?STATE{ stack = Stack,
+                                        db_mod=Mod } = State) ->
+        case parse_json(Mod,Stack,Data) of
             {ok,NewStack} ->
                 case ibrowse:stream_next(NewReqId) of
                     {error, unknown_req_id} ->
@@ -89,14 +94,14 @@ terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-parse_json(Stack,Data) ->
+parse_json(Mod,Stack,Data) ->
     try
         FullStack = lists:append(Stack,Data),
         case string:tokens(FullStack,"\n") of
         	[Obj] ->
-        	    parse_json_list([Obj]);
+        	    parse_json_list(Mod, [Obj]);
             JsonObjs when is_list(JsonObjs) ->
-                parse_json_list(JsonObjs)
+                parse_json_list(Mod, JsonObjs)
         end
     catch
         C:E ->
@@ -105,14 +110,14 @@ parse_json(Stack,Data) ->
             error
     end.
 
-parse_json_list([]) ->
+parse_json_list(_Mod, []) ->
     {ok,[]};
-parse_json_list([H|T]) ->
+parse_json_list(Mod, [H|T]) ->
     BinH = list_to_binary(H),
     try
         Json = jsx:decode(BinH),
-        ok = pasture_db:json_to_recs(Json),
-        parse_json_list(T)
+        ok = pasture_db:json_to_recs(Mod, Json),
+        parse_json_list(Mod, T)
     catch
         error:Reason when Reason =:= badarg;
                           Reason =:= {case_clause,initialdecimal};
