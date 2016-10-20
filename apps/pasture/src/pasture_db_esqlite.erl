@@ -59,7 +59,12 @@ code_change(_OldVsn, State, _Extra) ->
 
 add({_Type,Obj}) ->
     %io:format("S", []),
-    gen_server:call(?MODULE,Obj,infinity).
+    try
+     gen_server:call(?MODULE,Obj,infinity)
+    catch
+     C:E ->
+      ?WARNING("catch : ~p ~p ~p", [C,E,erlang:get_stacktrace()])
+    end.
 
 new_batch_size(_Size) ->
     ok.
@@ -74,7 +79,7 @@ insert(DBC,#pasture_event{ event_id=EI,
                            time=T } = _Rec) ->
     {ok, Statement} = esqlite3:prepare("insert or replace into pasture_event values(?1, ?2, ?3, ?4)", DBC),
     ok = esqlite3:bind(Statement, [EI,EN,EU,T]),
-    io:format("~p~n", [[EI,EN,EU,T]]),
+    ?DEBUG("~p~n", [[EI,EN,EU,T]]),
     _A = esqlite3:step(Statement),
     % io:format("A~p",[A]),
     ok;
@@ -89,7 +94,7 @@ insert(DBC,#pasture_group{ group_id=GID,
                            group_urlname=GU } = _Rec) ->
     {ok, Statement} = esqlite3:prepare("insert or replace into pasture_group values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9);", DBC),
     ok = esqlite3:bind(Statement, [GID, GCI, GCO, GLA, GLO, GN, GS, group_topics_str(GT), GU]),
-    io:format("~p~n", [[GID, GCI, GCO, GLA, GLO, GN, GS, group_topics_str(GT), GU]]),
+    ?DEBUG("~p~n", [[GID, GCI, GCO, GLA, GLO, GN, GS, group_topics_str(GT), GU]]),
     _A = esqlite3:step(Statement),
     % io:format("A~p",[A]),
     ok;
@@ -97,9 +102,9 @@ insert(DBC,#pasture_member{ member_id=MI,
                             member_name=MN,
                             other_services=OS,
                             photo=P } = _Rec) ->
-    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_member values(?1, ?2, ?3, ?4)", DBC),
+    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_member values(?1, ?2, ?3, ?4);", DBC),
     ok = esqlite3:bind(Statement, [MI,MN,other_services(OS),P]),
-    io:format("~p~n", [[MI,MN,other_services(OS),P]]),
+    ?DEBUG("~p~n", [[MI,MN,other_services(OS),P]]),
     _A = esqlite3:step(Statement),
     % io:format("A~p",[A]),
     ok;
@@ -107,12 +112,20 @@ insert(DBC,#pasture_venue{ venue_id=VI,
                            venue_name=VN,
                            lat=LA,
                            lon=LO} = _Rec) ->
-    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4)", DBC),
+    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4);", DBC),
     ok = esqlite3:bind(Statement, [VI,VN,LA,LO]),
-    io:format("~p~n", [[VI,VN,LA,LO]]),
+    ?DEBUG("~p~n", [[VI,VN,LA,LO]]),
     _A = esqlite3:step(Statement),
     % io:format("A~p",[A]),
-    ok.
+    ok;
+% insert(DBC, #pasture_twitter{} = R) ->
+%    ?CRITICAL("twitter entry -> ~p", [R]).
+insert(DBC, Json) ->
+   {ok, Statement} = esqlite3:prepare("insert or replace into pasture_twitter VALUES (?1);", DBC),
+   ok = esqlite3:bind(Statement, [Json]),
+   _A = esqlite3:step(Statement),
+   %% io:format("~p", [[Json]]),
+   ok.
 
 commit(_DBC) ->
     % ok = esqlite3:exec("commit;", DBC).
@@ -124,7 +137,8 @@ create_tables(Context) ->
     ok = esqlite3:exec("create table if not exists pasture_event (event_id, event_name, event_url, time, PRIMARY KEY(event_id ASC));", Context),
     ok = esqlite3:exec("create table if not exists pasture_group (group_id, group_city, group_country, group_lat, group_lon, group_name, group_state, group_topics, group_urlname, PRIMARY KEY(group_id ASC))", Context),
     ok = esqlite3:exec("create table if not exists pasture_member (member_id, member_name, other_services, photo, PRIMARY KEY(member_id ASC));", Context),
-    ok = esqlite3:exec("create table if not exists pasture_venue (venue_id, venue_name, lat, lon, PRIMARY KEY(venue_id ASC));", Context).
+    ok = esqlite3:exec("create table if not exists pasture_venue (venue_id, venue_name, lat, lon, PRIMARY KEY(venue_id ASC));", Context),
+    ok = esqlite3:exec("create table if not exists pasture_twitter (json JSON);", Context).
 
 group_topics_str(TopicList) ->
 
@@ -142,7 +156,5 @@ other_services([], R) ->
     lists:reverse(R);
 other_services(undefined,[]) ->
     "";
-other_services([{<<"facebook">>,[{<<"identifier">>,FbLink}]} | T], R) ->
-    other_services(T, ["|"++lists:reverse("facebook="++FbLink)]);
-other_services([{<<"twitter">>, [{<<"identifier">>,TwitterID}]} | T], R) ->
-    other_services(T, ["|"++lists:reverse("twitter="++TwitterID)|R]).
+other_services([{Service, [{<<"identifier">>, Value}]} | T], R) ->
+    other_services(T, [ lists:reverse(binary_to_list(Service)++"="++binary_to_list(Value)) |R]).

@@ -27,9 +27,9 @@ init({}) ->
     {ibrowse_req_id,ReqId} =
         ibrowse:send_req(
             "http://stream.meetup.com/2/rsvps",[],get,[],
-            [
-                {stream_chunk_size,16384},
-                {stream_to,{self(), once}}
+            [ 
+              %{stream_chunk_size,16384*2},
+              {stream_to,{self(), once}}
             ],
             infinity),
     Mod = application:get_env(pasture, db_mod, pasture_db_batch),
@@ -58,7 +58,7 @@ handle_info({ibrowse_async_response,
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ stack = Stack,
                                         db_mod=Mod } = State) ->
-        case parse_json(Mod,Stack,Data) of
+        case parse_json_list(Mod,[Data]) of
             {ok,NewStack} ->
                 case ibrowse:stream_next(NewReqId) of
                     {error, unknown_req_id} ->
@@ -93,22 +93,6 @@ terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->
 
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
-
-parse_json(Mod,Stack,Data) ->
-    try
-        FullStack = lists:append(Stack,Data),
-        case string:tokens(FullStack,"\n") of
-        	[Obj] ->
-        	    parse_json_list(Mod, [Obj]);
-            JsonObjs when is_list(JsonObjs) ->
-                parse_json_list(Mod, JsonObjs)
-        end
-    catch
-        C:E ->
-            ?INFO("parse_json\nC:~p\nE:~p\n~p\n",
-                        [C,E,erlang:get_stacktrace()]),
-            error
-    end.
 
 parse_json_list(_Mod, []) ->
     {ok,[]};

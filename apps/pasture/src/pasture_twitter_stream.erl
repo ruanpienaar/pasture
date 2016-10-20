@@ -34,7 +34,7 @@ python_cast(Msg) ->
 
 init([Str]) ->
     process_flag(trap_exit, true),
-    {ok, P} = python:start([{python_path, code:root_dir()},
+    {ok, P} = python:start([{python_path, code:priv_dir(pasture)},
                             {python, "python2"}
                             ]),
 
@@ -79,36 +79,7 @@ handle_info([error,ResponseCode], #?STATE{ python_pid = P} = State) ->
     ok = python:stop(P),
     {stop, ResponseCode, State};
 handle_info(Info, State) when is_list(Info) ->
-    Json = jsx:decode(list_to_binary(Info)),
-    Id = proplists:get_value(<<"id">>, Json),
-
-    UserProps = proplists:get_value(<<"user">>, Json),
-
-    case UserProps of 
-        undefined ->
-            ok;
-        _ ->
-            UserLocation = proplists:get_value(<<"location">>, UserProps),
-            case UserLocation of 
-                undefined ->
-                    case string:strip(" ", both, binary_to_list(UserLocation)) of 
-                        "" ->
-                            ok;
-                        _ ->
-                            ok = pasture_db_batch:add({
-                                pasture_twitter_location,
-                                pasture_twitter_location:new([UserLocation])
-                            })
-                    end;
-                _ ->
-                    ok
-            end
-    end,
-    
-    ok = pasture_db_batch:add({
-        pasture_twitter,
-        pasture_twitter:new([Id,State#?STATE.filter_str,Json])
-    }),
+    ok = pasture_db_esqlite:add({pasture_twitter,list_to_binary(Info)}),
     {noreply, State#?STATE{ search_result_count = State#?STATE.search_result_count + 1 }};
 handle_info(Info, State) ->
     io:format("Handle_info ~p \n",[Info]),
