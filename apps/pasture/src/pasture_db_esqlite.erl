@@ -17,7 +17,11 @@
 -define(STATE, pasture_db_esqlite_state).
 -record(?STATE, { bs,
                   b=0,
-                  dbc }).
+                  dbc,
+                  eve,
+                  grp,
+                  mem,
+                  ven }).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, {}, []).
@@ -26,21 +30,35 @@ init({}) ->
     false = process_flag(trap_exit, true),
     {ok,BS} = application:get_env(pasture, batch_size),
     %% TODO: make a db for every day...
-    {ok, Context} = esqlite3:open(code:priv_dir(pasture)++"/pasture.db"),
-    ok = create_tables(Context),
+    {ok, DBC} = esqlite3:open(code:priv_dir(pasture)++"/pasture.db"),
+    ok = create_tables(DBC),
+
+     {ok, S1} = esqlite3:prepare("insert or replace into pasture_event values(?1, ?2, ?3, ?4)", DBC),
+     {ok, S2} = esqlite3:prepare("insert or replace into pasture_group values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9);", DBC),
+     {ok, S3} = esqlite3:prepare("insert or replace into pasture_member values(?1, ?2, ?3, ?4);", DBC),
+     {ok, S4} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4);", DBC),
+
     {ok, #?STATE{ bs=BS,
-                  dbc = Context }}.
+                  dbc = DBC,
+                  eve = S1,
+                  grp = S2,
+                  mem = S3,
+                  ven = S4
+    }}.
 
 handle_call(Obj, _From, #?STATE{bs = _BS, b = B, dbc=DBC} = State) when B==0 ->
     ok = do_begin(DBC),
-    ok = insert(DBC,Obj),
+    S = statement(State, Obj),
+    ok = insert(S,Obj),
     {reply, ok, State#?STATE{b=1}};
 handle_call(Obj, _From, #?STATE{bs = BS, b = B, dbc=DBC} = State) when B>=BS ->
-    ok = insert(DBC,Obj),
+    S = statement(State, Obj),
+    ok = insert(S,Obj),
     ok = commit(DBC),
     {reply, ok, State#?STATE{b=0}};
 handle_call(Obj, _From, #?STATE{bs = BS, b = B, dbc=DBC} = State) when B<BS->
-    ok = insert(DBC,Obj),
+    S = statement(State, Obj),
+    ok = insert(S,Obj),
     {reply, ok, State#?STATE{b=B+1}}.
 
 handle_cast(_Msg, State) ->
@@ -73,17 +91,23 @@ do_begin(_DBC) ->
     % ok = esqlite3:exec("begin transaction;", DBC).
     ok.
 
-insert(DBC,#pasture_event{ event_id=EI,
+statement(State, #pasture_event{}) ->
+	State#?STATE.eve;
+statement(State, #pasture_group{}) ->
+	State#?STATE.grp;
+statement(State, #pasture_member{}) ->
+	State#?STATE.mem;
+statement(State, #pasture_venue{}) ->
+	State#?STATE.ven.
+
+insert(Statement,#pasture_event{ event_id=EI,
                            event_name=EN,
                            event_url=EU,
                            time=T } = _Rec) ->
-    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_event values(?1, ?2, ?3, ?4)", DBC),
     ok = esqlite3:bind(Statement, [EI,EN,EU,T]),
-    ?DEBUG("~p~n", [[EI,EN,EU,T]]),
     _A = esqlite3:step(Statement),
-    % io:format("A~p",[A]),
     ok;
-insert(DBC,#pasture_group{ group_id=GID,
+insert(Statement,#pasture_group{ group_id=GID,
                            group_city=GCI,
                            group_country=GCO,
                            group_lat=GLA,
@@ -92,40 +116,31 @@ insert(DBC,#pasture_group{ group_id=GID,
                            group_state=GS,
                            group_topics=GT,
                            group_urlname=GU } = _Rec) ->
-    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_group values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9);", DBC),
     ok = esqlite3:bind(Statement, [GID, GCI, GCO, GLA, GLO, GN, GS, group_topics_str(GT), GU]),
-    ?DEBUG("~p~n", [[GID, GCI, GCO, GLA, GLO, GN, GS, group_topics_str(GT), GU]]),
     _A = esqlite3:step(Statement),
-    % io:format("A~p",[A]),
     ok;
-insert(DBC,#pasture_member{ member_id=MI,
+insert(Statement,#pasture_member{ member_id=MI,
                             member_name=MN,
                             other_services=OS,
                             photo=P } = _Rec) ->
-    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_member values(?1, ?2, ?3, ?4);", DBC),
     ok = esqlite3:bind(Statement, [MI,MN,other_services(OS),P]),
-    ?DEBUG("~p~n", [[MI,MN,other_services(OS),P]]),
     _A = esqlite3:step(Statement),
-    % io:format("A~p",[A]),
     ok;
-insert(DBC,#pasture_venue{ venue_id=VI,
+insert(Statement,#pasture_venue{ venue_id=VI,
                            venue_name=VN,
                            lat=LA,
                            lon=LO} = _Rec) ->
-    {ok, Statement} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4);", DBC),
     ok = esqlite3:bind(Statement, [VI,VN,LA,LO]),
-    ?DEBUG("~p~n", [[VI,VN,LA,LO]]),
     _A = esqlite3:step(Statement),
-    % io:format("A~p",[A]),
-    ok;
+    ok.
 % insert(DBC, #pasture_twitter{} = R) ->
 %    ?CRITICAL("twitter entry -> ~p", [R]).
-insert(DBC, Json) ->
-   {ok, Statement} = esqlite3:prepare("insert or replace into pasture_twitter VALUES (?1);", DBC),
-   ok = esqlite3:bind(Statement, [Json]),
-   _A = esqlite3:step(Statement),
+%insert(DBC, S, Json) ->
+   %{ok, Statement} = esqlite3:prepare("insert or replace into pasture_twitter VALUES (?1);", DBC),
+   %ok = esqlite3:bind(Statement, [Json]),
+   %_A = esqlite3:step(Statement),
    %% io:format("~p", [[Json]]),
-   ok.
+   %ok.
 
 commit(_DBC) ->
     % ok = esqlite3:exec("commit;", DBC).
