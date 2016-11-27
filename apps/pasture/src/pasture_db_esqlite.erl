@@ -21,7 +21,8 @@
                   eve,
                   grp,
                   mem,
-                  ven }).
+                  ven,
+                  twi }).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, {}, []).
@@ -37,13 +38,15 @@ init({}) ->
      {ok, S2} = esqlite3:prepare("insert or replace into pasture_group values(?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9);", DBC),
      {ok, S3} = esqlite3:prepare("insert or replace into pasture_member values(?1, ?2, ?3, ?4);", DBC),
      {ok, S4} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4);", DBC),
+     {ok, S5} = esqlite3:prepare("insert or replace into pasture_twitter values(?1, ?2, ?3)", DBC),
 
     {ok, #?STATE{ bs=BS,
                   dbc = DBC,
                   eve = S1,
                   grp = S2,
                   mem = S3,
-                  ven = S4
+                  ven = S4,
+                  twi = S5
     }}.
 
 handle_call(Obj, _From, #?STATE{bs = _BS, b = B, dbc=DBC} = State) when B==0 ->
@@ -98,7 +101,9 @@ statement(State, #pasture_group{}) ->
 statement(State, #pasture_member{}) ->
 	State#?STATE.mem;
 statement(State, #pasture_venue{}) ->
-	State#?STATE.ven.
+	State#?STATE.ven;
+statement(State, #pasture_twitter{}) ->
+	State#?STATE.twi.
 
 insert(Statement,#pasture_event{ event_id=EI,
                            event_name=EN,
@@ -132,15 +137,11 @@ insert(Statement,#pasture_venue{ venue_id=VI,
                            lon=LO} = _Rec) ->
     ok = esqlite3:bind(Statement, [VI,VN,LA,LO]),
     _A = esqlite3:step(Statement),
+    ok;
+insert(Statement,#pasture_twitter{id=ID,filter_str=Str,json=JSON}) ->
+    ok = esqlite3:bind(Statement, [ID,Str,JSON]),
+    _A = esqlite3:step(Statement),
     ok.
-% insert(DBC, #pasture_twitter{} = R) ->
-%    ?CRITICAL("twitter entry -> ~p", [R]).
-%insert(DBC, S, Json) ->
-   %{ok, Statement} = esqlite3:prepare("insert or replace into pasture_twitter VALUES (?1);", DBC),
-   %ok = esqlite3:bind(Statement, [Json]),
-   %_A = esqlite3:step(Statement),
-   %% io:format("~p", [[Json]]),
-   %ok.
 
 commit(_DBC) ->
     % ok = esqlite3:exec("commit;", DBC).
@@ -153,7 +154,7 @@ create_tables(Context) ->
     ok = esqlite3:exec("create table if not exists pasture_group (group_id, group_city, group_country, group_lat, group_lon, group_name, group_state, group_topics, group_urlname, PRIMARY KEY(group_id ASC))", Context),
     ok = esqlite3:exec("create table if not exists pasture_member (member_id, member_name, other_services, photo, PRIMARY KEY(member_id ASC));", Context),
     ok = esqlite3:exec("create table if not exists pasture_venue (venue_id, venue_name, lat, lon, PRIMARY KEY(venue_id ASC));", Context),
-    ok = esqlite3:exec("create table if not exists pasture_twitter (json JSON);", Context).
+    ok = esqlite3:exec("create table if not exists pasture_twitter (id, filter_str, json JSON, PRIMARY KEY(id ASC));", Context).
 
 group_topics_str(TopicList) ->
 

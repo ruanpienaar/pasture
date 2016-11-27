@@ -78,8 +78,19 @@ handle_info([error,ResponseCode], #?STATE{ python_pid = P} = State) ->
     ?INFO("Stopped because tweepy responded with ~p",[ResponseCode]),
     ok = python:stop(P),
     {stop, ResponseCode, State};
-handle_info(Info, State) when is_list(Info) ->
-    ok = pasture_db_esqlite:add({pasture_twitter,list_to_binary(Info)}),
+handle_info(Info, #?STATE{filter_str=Str} = State) when is_list(Info) ->
+    %%io:format("\n~p\n",[Info]),
+    case jsx:decode(list_to_binary(Info)) of
+        [{<<"limit">>,[{<<"track">>,_},{<<"timestamp_ms">>,_}]}] ->
+            ok;
+        DecJson ->
+            case lists:keyfind(<<"id">>, 1, DecJson) of
+    	        false ->
+    	            io:format("dropped\n~p\n", [DecJson]);
+	        {<<"id">>,Id} ->
+                    ok = pasture_db_esqlite:add({pasture_twitter, #pasture_twitter{id = Id, filter_str=Str,json = Info}})
+            end
+    end,
     {noreply, State#?STATE{ search_result_count = State#?STATE.search_result_count + 1 }};
 handle_info(Info, State) ->
     io:format("Handle_info ~p \n",[Info]),
