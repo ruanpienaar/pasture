@@ -43,6 +43,20 @@
                                   }).
 -record(pasture_twitter_tweet_string,{string}).
 
+-record(pasture_google_trend, {
+    title,
+    approx_traffic,
+    pub_date,
+    picture_url
+}).
+-record(pasture_google_trend_news_item, {
+    title,
+    pub_date,
+    news_item_title,
+    news_item_snippet,
+    news_item_source
+}).
+
 -define(DEBUG(Msg),lager:debug(Msg)).
 -define(DEBUG(Msg, Args),lager:debug(Msg, Args)).
 

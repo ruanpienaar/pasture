@@ -14,3 +14,4 @@ log
 apps/pasture/.rebar/
 .rebar/erlcinfo
 rel/files/sys.config
+apps/pasture/priv/pasture.db

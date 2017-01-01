@@ -15,7 +15,7 @@ create_table(Nodes) ->
                 mnesia:create_table(
                         ?MODULE,
                         [{type,set},
-                         {ram_copies,Nodes},
+                         {disc_only_copies,Nodes},
                          {attributes,record_info(fields, pasture_twitter_location)},
                          {majority, true}
                        ]);
@@ -31,8 +31,8 @@ new([Location]) ->
 inc([Location]) ->
     mnesia:transaction(
         fun() ->
-            NewLoc = 
-                case mnesia:read(?MODULE, Location) of 
+            NewLoc =
+                case mnesia:read(?MODULE, Location) of
                     [] ->
                         #pasture_twitter_location{
                             location = Location

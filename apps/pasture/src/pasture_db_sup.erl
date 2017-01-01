@@ -12,10 +12,10 @@ start_link() ->
 %% @private
 init({}) ->
     Child1 =
-        {pasture_db_batch,
-            {pasture_db_batch, start_link, []},
-            permanent, 5000, worker,
-            [pasture_db_batch]},
+        {pasture_db_mnesia,
+            {pasture_db_mnesia, start_link, []},
+            temporary, 5000, worker,
+            [pasture_db_mnesia]},
     Child2 =
         {pasture_db_esqlite,
             {pasture_db_esqlite, start_link, []},

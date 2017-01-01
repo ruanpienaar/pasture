@@ -22,7 +22,9 @@
                   grp,
                   mem,
                   ven,
-                  twi }).
+                  twi,
+                  tre,
+                  tne }).
 
 start_link() ->
     gen_server:start_link({local, ?MODULE}, ?MODULE, {}, []).
@@ -39,6 +41,8 @@ init({}) ->
      {ok, S3} = esqlite3:prepare("insert or replace into pasture_member values(?1, ?2, ?3, ?4);", DBC),
      {ok, S4} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4);", DBC),
      {ok, S5} = esqlite3:prepare("insert or replace into pasture_twitter values(?1, ?2, ?3)", DBC),
+     {ok, S6} = esqlite3:prepare("insert or replace into pasture_google_trend values(?1, ?2, ?3, ?4)", DBC),
+     {ok, S7} = esqlite3:prepare("insert or replace into pasture_google_trend_news_item values(?1, ?2, ?3, ?4, ?5)", DBC),
 
     {ok, #?STATE{ bs=BS,
                   dbc = DBC,
@@ -46,7 +50,9 @@ init({}) ->
                   grp = S2,
                   mem = S3,
                   ven = S4,
-                  twi = S5
+                  twi = S5,
+                  tre = S6,
+                  tne = S7
     }}.
 
 handle_call(Obj, _From, #?STATE{bs = _BS, b = B, dbc=DBC} = State) when B==0 ->
@@ -78,13 +84,12 @@ code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 %%----------------
 
-add({_Type,Obj}) ->
-    %io:format("S", []),
+add(Obj) ->
     try
-     gen_server:call(?MODULE,Obj,infinity)
+        gen_server:call(?MODULE,Obj,infinity)
     catch
-     C:E ->
-      ?WARNING("catch : ~p ~p ~p", [C,E,erlang:get_stacktrace()])
+        C:E ->
+            ?WARNING("catch : ~p ~p ~p", [C,E,erlang:get_stacktrace()])
     end.
 
 new_batch_size(_Size) ->
@@ -103,7 +108,11 @@ statement(State, #pasture_member{}) ->
 statement(State, #pasture_venue{}) ->
 	State#?STATE.ven;
 statement(State, #pasture_twitter{}) ->
-	State#?STATE.twi.
+	State#?STATE.twi;
+statement(State, #pasture_google_trend{}) ->
+    State#?STATE.tre;
+statement(State, #pasture_google_trend_news_item{}) ->
+    State#?STATE.tne.
 
 insert(Statement,#pasture_event{ event_id=EI,
                            event_name=EN,
@@ -141,6 +150,23 @@ insert(Statement,#pasture_venue{ venue_id=VI,
 insert(Statement,#pasture_twitter{id=ID,filter_str=Str,json=JSON}) ->
     ok = esqlite3:bind(Statement, [ID,Str,JSON]),
     _A = esqlite3:step(Statement),
+    ok;
+insert(Statement, #pasture_google_trend{
+                    title = T,
+                    approx_traffic = AT,
+                    pub_date = PD,
+                    picture_url = PU} = Rec) ->
+    ok = esqlite3:bind(Statement, [T,AT,PD,PU]),
+    _A = esqlite3:step(Statement),
+    ok;
+insert(Statement, #pasture_google_trend_news_item{
+                    title = T,
+                    pub_date = PD,
+                    news_item_title = NT,
+                    news_item_snippet = NSN,
+                    news_item_source = NSO}) ->
+    ok = esqlite3:bind(Statement, [T,PD,NT,NSN,NSO]),
+    _A = esqlite3:step(Statement),
     ok.
 
 commit(_DBC) ->
@@ -154,10 +180,11 @@ create_tables(Context) ->
     ok = esqlite3:exec("create table if not exists pasture_group (group_id, group_city, group_country, group_lat, group_lon, group_name, group_state, group_topics, group_urlname, PRIMARY KEY(group_id ASC))", Context),
     ok = esqlite3:exec("create table if not exists pasture_member (member_id, member_name, other_services, photo, PRIMARY KEY(member_id ASC));", Context),
     ok = esqlite3:exec("create table if not exists pasture_venue (venue_id, venue_name, lat, lon, PRIMARY KEY(venue_id ASC));", Context),
-    ok = esqlite3:exec("create table if not exists pasture_twitter (id, filter_str, json JSON, PRIMARY KEY(id ASC));", Context).
+    ok = esqlite3:exec("create table if not exists pasture_twitter (id, filter_str, json JSON, PRIMARY KEY(id ASC));", Context),
+    ok = esqlite3:exec("create table if not exists pasture_google_trend ( title TEXT, approx_traffic TEXT, pub_date TEXT, picture_url TEXT, PRIMARY KEY (title, pub_date));", Context),
+    ok = esqlite3:exec("create table if not exists pasture_google_trend_news_item (title TEXT, pub_date TEXT, news_item1_title TEXT, news_item1_snippet TEXT, news_item1_source TEXT, PRIMARY KEY (title, pub_date));", Context).
 
 group_topics_str(TopicList) ->
-
     group_topics_str(TopicList, []).
 
 group_topics_str([], R) ->

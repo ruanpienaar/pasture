@@ -13,24 +13,15 @@ start(_ArgsList) ->
     ok.
 
 start(_StartType, _StartArgs) ->
-    case pasture_sup:start_link() of
-        {ok,SupPid} ->
-            ok = pasture_db:init(),
-            {ok,RanchListenerPid} = pasture_web:start(),
-            true = erlang:register(pasture_ranch_listener,RanchListenerPid),
-            {ok,_} = pasture_db_sup:start_link(),
-            %%{ok,C} = application:get_env(pasture, meetup_chunk_count),
-            %% Start meetup RSVP children
-            %% pasture_sup:start_children(1),
-            case pasture_twitter_sup:start_link() of
-                {ok,_} ->
-                    {ok,SupPid};
-                E ->
-                    E
-            end;
-        E ->
-            E
-    end.
+    pasture_sup:start_link().
+    % case pasture_sup:start_link() of
+    %     {ok,SupPid} ->
+    %         ok = pasture_db:init(),
+    %         {ok,RanchListenerPid} = pasture_web:start(),
+    %         true = erlang:register(pasture_ranch_listener,RanchListenerPid),
+    %         {ok,_} = pasture_db_sup:start_link(),
+
+
 
 stop(_State) ->
     ok = pasture_web:stop().

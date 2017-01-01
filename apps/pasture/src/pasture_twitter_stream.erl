@@ -15,7 +15,7 @@
 -define(PYTHON_MOD, tweepy_twitter_stream).
 -define(STATE,pasture_twitter_stream_state).
 -record(?STATE, {
-    python_pid, 
+    python_pid,
     filter_str,
     search_result_count = 0
 }).
@@ -69,7 +69,7 @@ handle_info({'EXIT', From, Reason}, State) when is_port(From) ->
     {noreply, State};
 handle_info({'EXIT', From, Reason}, State) ->
     ?INFO("Stop : FROM : ~p EXIT ~p",[From, Reason]),
-    {stop, stop, State};    
+    {stop, stop, State};
 
 handle_info([error,ResponseCode], #?STATE{ python_pid = P} = State) ->
 
@@ -88,7 +88,7 @@ handle_info(Info, #?STATE{filter_str=Str} = State) when is_list(Info) ->
     	        false ->
     	            io:format("dropped\n~p\n", [DecJson]);
 	        {<<"id">>,Id} ->
-                    ok = pasture_db_esqlite:add({pasture_twitter, #pasture_twitter{id = Id, filter_str=Str,json = Info}})
+                    ok = pasture_db_esqlite:add(#pasture_twitter{id = Id, filter_str=Str,json = Info})
             end
     end,
     {noreply, State#?STATE{ search_result_count = State#?STATE.search_result_count + 1 }};
