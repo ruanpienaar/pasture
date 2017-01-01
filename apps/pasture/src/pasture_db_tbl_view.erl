@@ -1,1 +1,0 @@
--module (pasture_db_tbl_view).
