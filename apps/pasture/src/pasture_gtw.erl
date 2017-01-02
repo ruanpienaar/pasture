@@ -85,6 +85,7 @@ do_fetch(Id) ->
             {NS,_,[NSVal]} = lists:keyfind(NS, 1, NewsItem),
             {NU,_,[NUVal]} = lists:keyfind(NU, 1, NewsItem),
             ok = pasture_db_esqlite:add(#pasture_google_trend_news_item{
+                country_id = Id,
                 title=Title,
                 pub_date=PubDate,
                 news_item_title=NTVal,
