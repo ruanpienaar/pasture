@@ -183,7 +183,7 @@ create_tables(Context) ->
     ok = esqlite3:exec("create table if not exists pasture_venue (venue_id, venue_name, lat, lon, PRIMARY KEY(venue_id ASC));", Context),
     ok = esqlite3:exec("create table if not exists pasture_twitter (id, filter_str, json JSON, PRIMARY KEY(id ASC));", Context),
     ok = esqlite3:exec("create table if not exists pasture_google_trend (country_id INT, title TEXT, approx_traffic TEXT, pub_date TEXT, picture_url TEXT, PRIMARY KEY (title, pub_date));", Context),
-    ok = esqlite3:exec("create table if not exists pasture_google_trend_news_item (country_id INT, title TEXT, pub_date TEXT, news_item1_title TEXT, news_item1_snippet TEXT, news_item1_source TEXT, PRIMARY KEY (country_id, title, pub_date));", Context).
+    ok = esqlite3:exec("create table if not exists pasture_google_trend_news_item (title TEXT, pub_date TEXT, news_item1_title TEXT, news_item1_snippet TEXT, news_item1_source TEXT, PRIMARY KEY (country_id, title, pub_date));", Context).
 
 group_topics_str(TopicList) ->
     group_topics_str(TopicList, []).
