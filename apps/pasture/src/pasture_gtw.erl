@@ -13,20 +13,47 @@ start_link({Id,Country}) ->
 
 fetch_all() ->
     [ begin
-        gen_server:call(Country, fetch, 10000),
+        fetch(Country),
         timer:sleep(2000)
      end || {Id,Country} <- pasture_google_trends_sup:countries() ].
 
 fetch(Country) ->
-    gen_server:call(Country, fetch, 10000).
+    gen_server:cast(Country, fetch).
 
 init({Id,Country}) ->
-    {ok, #{id=>Id, country=>Country}}.
+    {ok, #{id=>Id, country=>Country}, 100}.
 
-% https://www.google.com/trends/hottrends/atom/feed?pn=p1
+handle_call(_Request, _From, State) ->
+    {reply, {error, unknown_call}, State}.
 
-% call it each hour.
-handle_call(fetch, _From, #{ id := Id } = State) ->
+handle_cast(fetch, #{ id := Id } = State) ->
+    do_fetch(Id),
+    {noreply, State}.
+
+handle_info(timeout, State) ->
+    % fetch_all(),
+    timer(),
+    {noreply, State};
+handle_info(timer, State) ->
+    fetch_all(),
+    timer(),
+    {noreply, State};
+handle_info(_Info, State) ->
+    {noreply, State}.
+
+terminate(_Reason, _State) ->
+    ok.
+
+code_change(_OldVsn, State, _Extra) ->
+    {ok, State}.
+
+url(Id) ->
+    "https://www.google.com/trends/hottrends/atom/feed?pn=p"++integer_to_list(Id).
+
+timer() ->
+    erlang:send_after(1000 * 60 * 60, self(), timer).
+
+do_fetch(Id) ->
     Url = url(Id),
     {ok,"200", Headers, Xml} = ibrowse:send_req(Url, [], get),
     {ok, RssElement, Tail} = erlsom:simple_form(Xml),
@@ -34,6 +61,7 @@ handle_call(fetch, _From, #{ id := Id } = State) ->
     [{"channel",_,ChannelContent}] = RssCont,
     Items = proplists:lookup_all("item", ChannelContent),
     lists:foreach(fun({"item", _, ItemContent}) ->
+        ?WARNING("."),
         {"title",_,[Title]} = lists:keyfind("title", 1, ItemContent),
         ApproxCol = "{http://www.google.com/trends/hottrends}approx_traffic",
         {ApproxCol,_,[ApproxTraffic]} = lists:keyfind(ApproxCol, 1, ItemContent),
@@ -50,7 +78,6 @@ handle_call(fetch, _From, #{ id := Id } = State) ->
         NewsItemCol = "{http://www.google.com/trends/hottrends}news_item",
         NewsItems = proplists:lookup_all(NewsItemCol, ItemContent),
         lists:foreach(fun({"{http://www.google.com/trends/hottrends}news_item",_,NewsItem}) ->
-            ?CRITICAL("~p~n", [NewsItem]),
             NT="{http://www.google.com/trends/hottrends}news_item_title",
             NS="{http://www.google.com/trends/hottrends}news_item_snippet",
             NU="{http://www.google.com/trends/hottrends}news_item_url",
@@ -66,30 +93,14 @@ handle_call(fetch, _From, #{ id := Id } = State) ->
             })
         end, NewsItems),
         ok = pasture_db_esqlite:add(#pasture_google_trend{
+                country_id = Id,
                 title = Title,
                 approx_traffic = ApproxTraffic,
                 pub_date = PubDate,
                 picture_url = PictureUrl
         })
-    end, Items),
-    {reply, ok, State};
-handle_call(_Request, _From, State) ->
-    {reply, {error, unknown_call}, State}.
+    end, Items).
 
-handle_cast(_Msg, State) ->
-    {noreply, State}.
-
-handle_info(_Info, State) ->
-    {noreply, State}.
-
-terminate(_Reason, _State) ->
-    ok.
-
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
-
-url(Id) ->
-    "https://www.google.com/trends/hottrends/atom/feed?pn=p"++integer_to_list(Id).
 % {"item",[],
 %     [
 %         {"title",[],["black eyed peas"]},

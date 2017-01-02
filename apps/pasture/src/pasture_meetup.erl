@@ -13,7 +13,8 @@
 
 -record(?STATE,{
     ibrowse_req_id,
-    db_mod
+    db_mod,
+    stale_timer_ref
 }).
 
 %% TODO: the supervisor didn't restart the process when it failed...
@@ -27,7 +28,7 @@ init({}) ->
         ibrowse:send_req(
             "http://stream.meetup.com/2/rsvps",[],get,[],
             [
-              %{stream_chunk_size,16384*2},
+              {stream_chunk_size,16384*20},
               {stream_to,{self(), once}}
             ],
             infinity),
@@ -41,6 +42,9 @@ handle_call(undefined, _From, State) ->
 handle_cast(undefined, State) ->
     {noreply, State}.
 
+handle_info(stale_check, State) ->
+    ?INFO("went stale...~p", [erlang:process_info(self())]),
+    async_restart(stale,State#?STATE{ stale_timer_ref = undefined });
 handle_info({'EXIT', _From, Reason},State) ->
     async_restart(Reason,State);
 handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
@@ -49,21 +53,26 @@ handle_info({ibrowse_async_headers,ReqId,"200",Headers},State) ->
         {error,unknown_req_id} ->
             {stop, normal, State};
         ok ->
-            {noreply,State}
+            Ref = stale_timer(self()),
+            {noreply,State#?STATE{stale_timer_ref=Ref}}
     end;
 handle_info({ibrowse_async_response,
                 _,{error,connection_closed}}, State) ->
     async_restart({error,connection_closed}, State);
 handle_info({ibrowse_async_response,
-                NewReqId,Data},#?STATE{ db_mod=Mod } = State) ->
+                NewReqId,Data},#?STATE{ db_mod=Mod,
+                                        stale_timer_ref=Ref } = State) ->
         case parse_json_list(Mod,[Data]) of
             {ok,_} ->
                 case ibrowse:stream_next(NewReqId) of
                     {error, unknown_req_id} ->
                         async_restart({error,unknown_req_id},State);
                     ok ->
+                        RemSeconds = erlang:cancel_timer(Ref),
+                        NewRef = stale_timer(self()),
                         {noreply,
-                            State#?STATE{ ibrowse_req_id =NewReqId }}
+                            State#?STATE{ ibrowse_req_id =NewReqId,
+                                          stale_timer_ref=NewRef }}
                 end;
             error ->
                 async_restart({error,parse_json_error},State);
@@ -113,3 +122,6 @@ parse_json_list(Mod, [H|T]) ->
                         [C,E,erlang:get_stacktrace()]),
             error
     end.
+
+stale_timer(Pid) ->
+    erlang:send_after(5000, Pid, stale_check).

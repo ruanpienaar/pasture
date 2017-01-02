@@ -44,6 +44,7 @@
 -record(pasture_twitter_tweet_string,{string}).
 
 -record(pasture_google_trend, {
+    country_id,
     title,
     approx_traffic,
     pub_date,

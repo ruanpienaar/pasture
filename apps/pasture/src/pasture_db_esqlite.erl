@@ -41,7 +41,7 @@ init({}) ->
      {ok, S3} = esqlite3:prepare("insert or replace into pasture_member values(?1, ?2, ?3, ?4);", DBC),
      {ok, S4} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4);", DBC),
      {ok, S5} = esqlite3:prepare("insert or replace into pasture_twitter values(?1, ?2, ?3)", DBC),
-     {ok, S6} = esqlite3:prepare("insert or replace into pasture_google_trend values(?1, ?2, ?3, ?4)", DBC),
+     {ok, S6} = esqlite3:prepare("insert or replace into pasture_google_trend values(?1, ?2, ?3, ?4, ?5)", DBC),
      {ok, S7} = esqlite3:prepare("insert or replace into pasture_google_trend_news_item values(?1, ?2, ?3, ?4, ?5)", DBC),
 
     {ok, #?STATE{ bs=BS,
@@ -152,11 +152,12 @@ insert(Statement,#pasture_twitter{id=ID,filter_str=Str,json=JSON}) ->
     _A = esqlite3:step(Statement),
     ok;
 insert(Statement, #pasture_google_trend{
+                    country_id = CI,
                     title = T,
                     approx_traffic = AT,
                     pub_date = PD,
                     picture_url = PU} = Rec) ->
-    ok = esqlite3:bind(Statement, [T,AT,PD,PU]),
+    ok = esqlite3:bind(Statement, [CI,T,AT,PD,PU]),
     _A = esqlite3:step(Statement),
     ok;
 insert(Statement, #pasture_google_trend_news_item{
@@ -182,7 +183,7 @@ create_tables(Context) ->
     ok = esqlite3:exec("create table if not exists pasture_venue (venue_id, venue_name, lat, lon, PRIMARY KEY(venue_id ASC));", Context),
     ok = esqlite3:exec("create table if not exists pasture_twitter (id, filter_str, json JSON, PRIMARY KEY(id ASC));", Context),
     ok = esqlite3:exec("create table if not exists pasture_google_trend ( title TEXT, approx_traffic TEXT, pub_date TEXT, picture_url TEXT, PRIMARY KEY (title, pub_date));", Context),
-    ok = esqlite3:exec("create table if not exists pasture_google_trend_news_item (title TEXT, pub_date TEXT, news_item1_title TEXT, news_item1_snippet TEXT, news_item1_source TEXT, PRIMARY KEY (title, pub_date));", Context).
+    ok = esqlite3:exec("create table if not exists pasture_google_trend_news_item (country_id INT, title TEXT, pub_date TEXT, news_item1_title TEXT, news_item1_snippet TEXT, news_item1_source TEXT, PRIMARY KEY (country_id, title, pub_date));", Context).
 
 group_topics_str(TopicList) ->
     group_topics_str(TopicList, []).
