@@ -161,12 +161,13 @@ insert(Statement, #pasture_google_trend{
     _A = esqlite3:step(Statement),
     ok;
 insert(Statement, #pasture_google_trend_news_item{
+                    country_id = CI,
                     title = T,
                     pub_date = PD,
                     news_item_title = NT,
                     news_item_snippet = NSN,
                     news_item_source = NSO}) ->
-    ok = esqlite3:bind(Statement, [T,PD,NT,NSN,NSO]),
+    ok = esqlite3:bind(Statement, [CI,T,PD,NT,NSN,NSO]),
     _A = esqlite3:step(Statement),
     ok.
 
