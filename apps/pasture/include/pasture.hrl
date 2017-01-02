@@ -51,6 +51,7 @@
     picture_url
 }).
 -record(pasture_google_trend_news_item, {
+    country_id,
     title,
     pub_date,
     news_item_title,
