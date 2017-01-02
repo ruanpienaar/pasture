@@ -42,7 +42,7 @@ init({}) ->
      {ok, S4} = esqlite3:prepare("insert or replace into pasture_venue values(?1, ?2, ?3, ?4);", DBC),
      {ok, S5} = esqlite3:prepare("insert or replace into pasture_twitter values(?1, ?2, ?3)", DBC),
      {ok, S6} = esqlite3:prepare("insert or replace into pasture_google_trend values(?1, ?2, ?3, ?4, ?5)", DBC),
-     {ok, S7} = esqlite3:prepare("insert or replace into pasture_google_trend_news_item values(?1, ?2, ?3, ?4, ?5)", DBC),
+     {ok, S7} = esqlite3:prepare("insert or replace into pasture_google_trend_news_item values(?1, ?2, ?3, ?4, ?5, ?6)", DBC),
 
     {ok, #?STATE{ bs=BS,
                   dbc = DBC,
