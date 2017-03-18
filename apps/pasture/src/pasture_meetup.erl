@@ -28,7 +28,7 @@ init({}) ->
         ibrowse:send_req(
             "http://stream.meetup.com/2/rsvps",[],get,[],
             [
-              {stream_chunk_size,16384*20},
+              %{stream_chunk_size,16384*20},
               {stream_to,{self(), once}}
             ],
             infinity),

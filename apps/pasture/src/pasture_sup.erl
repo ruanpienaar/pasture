@@ -32,6 +32,8 @@ init({}) ->
             permanent, 5000, worker,
             [pasture_db_sup]},
 
-    Children = [C1,C2,C3,C4],
+    Children = [
+	C1,
+        C2,C3,C4],
     RestartStrategy = {one_for_one, 5, 10},
     {ok, {RestartStrategy, Children}}.

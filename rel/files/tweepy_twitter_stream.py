@@ -16,10 +16,10 @@ from erlport.erlang import set_message_handler, cast
 
 response_dest = ""
 
-consumer_key=""
-consumer_secret=""
-access_token=""
-access_token_secret=""
+consumer_key="JmHsQPAzhAYTtsnDEblRkQtOW"
+consumer_secret="vw0afGtwlxW5sX2EyPsUwcb6jiEurMWoejAbKEAZ6sqxb3l1dK"
+access_token="101055484-iQg2OaLNtEHInKDPX2Ca6MrCBkBZ74G94iHAPgJm"
+access_token_secret="Zbs11KOBiy9mMQTBYtwnfy1fKFnnzP57hNLEntqtQ9abs"
 
 def register_handler(dest):
     global response_dest

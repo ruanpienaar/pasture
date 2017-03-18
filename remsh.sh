@@ -1,2 +1,2 @@
 #!/bin/bash
-erl -name debug_shell -setcookie pasture_dev -remsh $1
+erl -name debug_shell -setcookie pasture -remsh $1

@@ -1,5 +1,5 @@
 ## Name of the node
--sname p1
+-name p1
 
 ## Cookie for distributed erlang
 -setcookie pasture
@@ -10,7 +10,7 @@
 
 ## Enable kernel poll and a few async threads
 +K true
-+A 128
++A 1
 
 ## Don't kill the service, when some nitwit uses Ctrl-C when attached.
 ##+Bi
@@ -25,3 +25,4 @@
 
 -mnesia dir '"Mnesia"'
 
+-smp enable
