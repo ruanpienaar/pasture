@@ -133,7 +133,7 @@ mnesia_init(MnesiaTbls,MasterNode) when MasterNode == node() ->
     {ok,Nodes} = application:get_env(pasture, db_nodes),
     [ExtraNodes] = [ Nodes -- [node()] ],
     ?INFO("Extra nodes : ~p\n\n",[ExtraNodes]),
-    {ok,[]} = mnesia:change_config(extra_db_nodes, ExtraNodes),
+    {ok,_} = mnesia:change_config(extra_db_nodes, ExtraNodes),
     stopped = mnesia:stop(),
     ?INFO("Trying to install schema on ~p\n\n",[Nodes]),
     timer:sleep(25),
