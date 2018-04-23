@@ -14,11 +14,9 @@
 -record(?STATE,{
     ibrowse_req_id,
     db_mod,
-    stale_timer_ref
+    stale_timer_ref,
+    prev_json
 }).
-
-%% TODO: the supervisor didn't restart the process when it failed...
-% 2015-01-15 23:58:30.856 [error] <0.3914.0> Supervisor pasture_sup had child pasture_meetup_id started with {pasture_meetup,start_link,undefined} at <0.4045.0> exit with reason no match of right hand value {error,unknown_req_id} in pasture_meetup:handle_info/2 line 58 in context child_terminated
 
 start_link() ->
     gen_server:start_link(?MODULE, {}, []).
@@ -61,9 +59,14 @@ handle_info({ibrowse_async_response,
     async_restart({error,connection_closed}, State);
 handle_info({ibrowse_async_response,
                 NewReqId,Data},#?STATE{ db_mod=Mod,
-                                        stale_timer_ref=Ref } = State) ->
-        case parse_json_list(Mod,[Data]) of
-            {ok,_} ->
+                                        stale_timer_ref=Ref,
+                                        prev_json = PrevJson
+                                         } = State) ->
+        %case parse_json_list(Mod,[Data]) of
+        case parse_json(Data, PrevJson) of
+            {ok, Json} ->
+                ?EMERGENCY("json ok -> ~p", [Json]),
+            	ok = pasture_db:json_to_recs(Mod, Json),
                 case ibrowse:stream_next(NewReqId) of
                     {error, unknown_req_id} ->
                         async_restart({error,unknown_req_id},State);
@@ -74,10 +77,19 @@ handle_info({ibrowse_async_response,
                             State#?STATE{ ibrowse_req_id =NewReqId,
                                           stale_timer_ref=NewRef }}
                 end;
-            error ->
-                async_restart({error,parse_json_error},State);
-            Else ->
-                async_restart({parse_json_error,Else},State)
+            {error,{POS,RR}} when RR == invalid_string orelse
+                                  RR == truncated_json ->
+                        RemSeconds = erlang:cancel_timer(Ref),
+                        NewRef = stale_timer(self()),
+                        {noreply,
+                            State#?STATE{ ibrowse_req_id =NewReqId,
+                                          stale_timer_ref=NewRef,
+                                          prev_json = Data
+                                          }};
+            % error ->
+            %     async_restart({error,parse_json_error},State);
+            {error, Reason} ->
+                async_restart({parse_json_error, {error, Reason}},State)
         end;
 handle_info({ibrowse_async_response_end,ReqId}, State) ->
     ibrowse:stream_close(ReqId),
@@ -100,28 +112,51 @@ terminate(Reason, #?STATE{ibrowse_req_id = RI} = _State) ->
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-parse_json_list(_Mod, []) ->
-    {ok,[]};
-parse_json_list(Mod, [H|T]) ->
-    BinH = list_to_binary(H),
+parse_json(Data, undefined) ->
     try
-        Json = jsx:decode(BinH),
-        ok = pasture_db:json_to_recs(Mod, Json),
-        parse_json_list(Mod, T)
+        {ok, jiffy:decode(Data)}
     catch
-        error:Reason when Reason =:= badarg;
-                          Reason =:= {case_clause,initialdecimal};
-                          Reason =:= {case_clause,negative} ->
-            {ok,lists:flatten(lists:append(H,T))};
-        error:{case_clause,MissingClause} ->
-            ?INFO("pasture_meetup error:{case_clause,~p} ",[MissingClause]),
-            ?INFO("Tried decoding ~p ",[BinH]),
-            error;
-        C:E ->
-            ?INFO("parse_json_list C:~p E:~p ~p ",
-                        [C,E,erlang:get_stacktrace()]),
-            error
+        throw:{error,{POS,RR}} when RR == invalid_string orelse
+                                    RR == truncated_json ->
+            ?WARNING("~p: data was: ~p", [RR, Data]),
+            {error,{POS,RR}};
+        throw:{error, Reason} ->
+            ?WARNING("jiffy error reason: ~p data was: ~p", [Reason, Data]),
+            {error, Reason}
+    end;
+parse_json(Data, PrevData) ->
+    ConcatBin = <<PrevData/binary, Data/binary>>,
+    case parse_json(ConcatBin, undefined) of
+        {error,{POS,invalid_string}} ->
+            ?WARNING("Tried twice, still invalid string, ConcatBin:~p", [ConcatBin]),
+            parse_json(Data, undefined);
+        OK ->
+            OK
     end.
+
+%% Deprecated jsx code
+% parse_json_list(_Mod, []) ->
+%     {ok,[]};
+% parse_json_list(Mod, [H|T]) ->
+%     BinH = list_to_binary(H),
+%     try
+%         Json = jsx:decode(BinH),
+%         ok = pasture_db:json_to_recs(Mod, Json),
+%         parse_json_list(Mod, T)
+%     catch
+%         error:Reason when Reason =:= badarg;
+%                           Reason =:= {case_clause,initialdecimal};
+%                           Reason =:= {case_clause,negative} ->
+%             {ok,lists:flatten(lists:append(H,T))};
+%         error:{case_clause,MissingClause} ->
+%             ?INFO("pasture_meetup error:{case_clause,~p} ",[MissingClause]),
+%             ?INFO("Tried decoding ~p ",[BinH]),
+%             error;
+%         C:E ->
+%             ?INFO("parse_json_list C:~p E:~p ~p ",
+%                         [C,E,erlang:get_stacktrace()]),
+%             error
+%     end.
 
 stale_timer(Pid) ->
     erlang:send_after(5000, Pid, stale_check).

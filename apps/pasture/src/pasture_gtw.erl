@@ -88,31 +88,3 @@ handle_item(Id, ItemContent) ->
             pub_date = PubDate,
             picture_url = PictureUrl
     }).
-
-% {"item",[],
-%     [
-%         {"title",[],["black eyed peas"]},
-%         {"{http://trends.google.com/trends/hottrends}approx_traffic",[],["20,000+"]},
-%         {"description",[],[]},
-%         {"link",[],["https://www.google.com/trends/hottrends?pn=p1#a=20170101-black+eyed+peas"]},
-%         {"pubDate",[],["Sun, 01 Jan 2017 00:00:00 -0800"]},
-%         {"{http://trends.google.com/trends/hottrends}picture",[],["//t1.gstatic.com/images?q=tbn:ANd9GcRnlTTF8zNIc2l6pgIE09mWNhv7LAvqBR_PTTLr3UhJldXGy3S7_Guw7JI6x6erIDk1UzhQH-iw"]},
-%         {"{http://trends.google.com/trends/hottrends}picture_source",[],["International Business Times"]},
-%         {"{http://trends.google.com/trends/hottrends}news_item",[],
-%             [
-%               {"{http://trends.google.com/trends/hottrends}news_item_title",[],["How To Make <b>Black</b>-<b>Eyed Peas</b>: An Easy New Year&#39;s Recipe In The Southern Tradition"]},
-%               {"{http://trends.google.com/trends/hottrends}news_item_snippet",[],["If you live anywhere near the Southern United States, you know it&#39;s lucky to have <b>black eyed</b>-<b>peas</b> for dinner on New Year&#39;s Day. Like &#39;em or not, it&#39;s a tradition. &quot;<b>Black</b>-<b>eyed peas</b>, collard green, pork chop and corn bread,&quot; Alabama resident Marcerlene&nbsp;..."]},
-%               {"{http://trends.google.com/trends/hottrends}news_item_url",[],["http://www.ibtimes.com/how-make-black-eyed-peas-easy-new-years-recipe-southern-tradition-2467849"]},
-%               {"{http://trends.google.com/trends/hottrends}news_item_source",[],["International Business Times"]}
-%             ]
-%         },
-%         {"{http://trends.google.com/trends/hottrends}news_item",[],
-%             [
-%               {"{http://trends.google.com/trends/hottrends}news_item_title",[], ["Why do we eat <b>black</b>-<b>eyed peas</b>, hog jowls and greens on New Year&#39;s Day?"]},
-%               {"{http://trends.google.com/trends/hottrends}news_item_snippet",[], ["If you want wealth and happiness in 2017, you need to make sure you dine on <b>black eyed peas</b>, hog jowls and collard greens on Jan. 1. The <b>black</b>-<b>eyed</b>-<b>pea</b>, pork and greens tradition is found mostly in the South, though it&#39;s spread throughout the country <b>...</b>"]},
-%               {"{http://trends.google.com/trends/hottrends}news_item_url",[], ["http://www.al.com/news/index.ssf/2016/12/why_do_we_eat_black-eyed_peas.html"]},
-%               {"{http://trends.google.com/trends/hottrends}news_item_source",[], ["AL.com"]}
-%             ]
-%         }
-%     ]
-% }

@@ -29,7 +29,7 @@ start_link() ->
 
 add(Obj) ->
     try
-        gen_server:cast(?MODULE,{add, Obj})
+        ok = gen_server:cast(?MODULE,{add, Obj})
     catch
         C:E ->
             ?EMERGENCY("catch : ~p ~p ~p", [C,E,erlang:get_stacktrace()])
@@ -119,17 +119,9 @@ handle_info(Info, State) ->
     {noreply, State}.
 
 worker(Statements, L) ->
-    % W=
-    % proc_lib:spawn_link(fun() ->
-        % put(pasture_db_esqlite_worker_pid, self()),
-        lists:foreach(fun(I) ->
-            '$done' = insert(statement(Statements, element(1, I)), I)
-        end, L).
-	%% ,
-        %%?INFO("[~p] ~p Inserted ~p entries...",[?MODULE, self(), length(L)]).
-    % end),
-    % ?WARNING("Spawned worker: ~p~n", [W]),
-    % W.
+    lists:foreach(fun(I) ->
+        '$done' = insert(statement(Statements, element(1, I)), I)
+    end, L).
 
 statement(Statements, ObjAtom) ->
     {ObjAtom,Statement} = lists:keyfind(ObjAtom, 1, Statements),
@@ -151,8 +143,6 @@ new_batch_size(_Size) ->
 % do_begin(_DBC) ->
     % ok = esqlite3:exec("begin transaction;", DBC).
 %    ok.
-
-
 
 insert(Statement,#pasture_event{ event_id=EI,
                            event_name=EN,

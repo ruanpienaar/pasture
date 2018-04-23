@@ -130,7 +130,7 @@ mnesia_init() ->
     mnesia_init(MnesiaTbls,Master).
 
 mnesia_init(MnesiaTbls,MasterNode) when MasterNode == node() ->
-    {ok,Nodes} = application:get_env(pasture, db_nodes),
+    {ok, Nodes} = application:get_env(pasture, db_nodes),
     [ExtraNodes] = [ Nodes -- [node()] ],
     ?INFO("Extra nodes : ~p\n\n",[ExtraNodes]),
     {ok,_} = mnesia:change_config(extra_db_nodes, ExtraNodes),
@@ -160,8 +160,6 @@ mnesia_init(MnesiaTbls,MasterNode) when MasterNode == node() ->
         end,
         lists:foreach(fun(EN) ->
             ?CRITICAL("Add table copy ~p on node ~p ...",[Tbl, EN]),
-
-            % rpc:call('p2@localhost', mnesia, table_info, [pasture_event,disc_only_copies]).
             EnDiscCopies = rpc:call(EN, mnesia, table_info, [Tbl,disc_only_copies]),
             case lists:member(EN, EnDiscCopies) of
                 true ->

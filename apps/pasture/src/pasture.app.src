@@ -9,7 +9,8 @@
                   ssl,
                   cowboy,
                   erlport,
-                  ibrowse
+                  ibrowse,
+                  jiffy
                  ]},
   {mod, { pasture_app, []}},
   {env, []}

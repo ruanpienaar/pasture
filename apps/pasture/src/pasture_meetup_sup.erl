@@ -26,7 +26,7 @@ do_init() ->
     C1 =
         {pasture_meetup,
             {pasture_meetup, start_link, []},
-            permanent, 5000, worker,
+            permanent, 5, worker,
             [pasture_meetup]},
     Children = [C1],
     RestartStrategy = {one_for_one, 5, 10},
