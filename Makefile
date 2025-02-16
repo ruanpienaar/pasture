@@ -1,65 +1,29 @@
-ERL					?= erl
-ERLC				= erlc
-EBIN_DIRS		:= $(wildcard deps/*/ebin)
-APPS				:= $(shell dir apps)
-REL_DIR     = rel
-NODE				= pasture
-REL					= pasture
-SCRIPT_PATH  := $(REL_DIR)/$(NODE)/bin/$(REL)
+.PHONY: release compile get-deps test clean dialyzer rebar3 console
 
-.PHONY: rel offline compile get-deps update-deps test clean deep-clean
+release: compile
+	@./rebar3 release
 
-rel: compile
-	@. ./set-env.sh
-	@rebar generate -f
+compile: rebar3 get-deps
+	@./rebar3 compile
 
-offline:
-	./rebar compile
-	./rebar generate
+get-deps:
+	@./rebar3 get-deps
 
-compile: get-deps update-deps
-	./rebar compile
+test:
+	@./rebar3 eunit ct
+
+clean:
+	@./rebar3 clean
+
+dialyzer: compile
+	@./rebar3 dialyzer
+
+rebar3:
+	@ls rebar3 || wget https://s3.amazonaws.com/rebar3/rebar3 && chmod +x rebar3
 
 python_modules: get-deps
 	@sudo pip install tweepy
 	@sudo pip install erlport
 
-beams:
-	./rebar compile
-
-get-deps:
-	./rebar get-deps
-
-update-deps:
-	./rebar update-deps
-
-test: offline
-	./rebar skip_deps=true apps="pasture" eunit
-
-clean:
-	./rebar clean
-
-deep-clean: clean
-	./rebar delete-deps
-
-setup_dialyzer:
-	dialyzer --build_plt --apps erts kernel stdlib mnesia compiler syntax_tools runtime_tools crypto tools inets ssl webtool public_key observer
-	dialyzer --add_to_plt deps/*/ebin
-
-dialyzer: compile
-	dialyzer */apps/*/ebin
-
-doc:
-	rebar skip_deps=true doc
-	for app in $(APPS); do \
-		cp -R apps/$${app}/doc doc/$${app}; \
-	done;
-
-analyze: checkplt
-	./rebar skip_deps=true dialyze
-
-buildplt:
-	./rebar skip_deps=true build-plt
-
-checkplt: buildplt
-	./rebar skip_deps=true check-plt
+console:
+	@./_build/default/rel/erlang_metrics/bin/pasture console
